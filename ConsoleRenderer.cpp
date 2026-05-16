@@ -11,7 +11,7 @@ void ConsoleRenderer::gotoxy(int x, int y) {
 void ConsoleRenderer::draw_board(const Board& board, int level){
     Color wall_color = static_cast<Color>((level % 6) + 1);
 
-    for (int i = 0; i < 21; i++) { //board 21행 14열인 경우
+    for (int i = 0; i < 21; i++) {              //board 21행 14열
         for (int j = 0; j < 14; j++) {
             gotoxy(j * 2 + ab_x, i + ab_y);
             if (j == 0 || j == 13 || i == 20) {
@@ -30,7 +30,7 @@ void ConsoleRenderer::draw_board(const Board& board, int level){
 }
 void ConsoleRenderer::draw_block(const Block& block, int x, int y){
     ColorUtility::apply(static_cast<Color>(block.get_color()));
-    auto shape_data = block.get_shape();
+    //auto shape_data = block.get_shape();    //auto를 반환하는 함수를 정의되기 전에 사용할 수 없습니다
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
             if (shape_data[i][j] == 1) {
@@ -41,7 +41,7 @@ void ConsoleRenderer::draw_block(const Block& block, int x, int y){
     }
 }
 void ConsoleRenderer::erase_block(const Block& block, int x, int y){
-    auto shape_data = block.get_shape();
+    //auto shape_data = block.get_shape();    
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
             if (shape_data[i][j] == 1) {
@@ -67,12 +67,12 @@ void ConsoleRenderer::draw_next_block(const class Block& next){
         }
     }
     ColorUtility::apply(static_cast<Color>(next.get_color()));
-    auto shape_data = next.get_shape();
+    //auto shape_data = next.get_shape();
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
             if (shape_data[i][j] == 1) {
-                // 박스 내부 중앙(가로 오프셋 17칸, 세로 오프셋 2칸 지점)에 알맞게 배치합니다.
+                
                 gotoxy((j + 17) * 2 + ab_x, (i + 2) + ab_y);
                 std::cout << "■";
             }
@@ -86,7 +86,7 @@ void ConsoleRenderer::draw_stats(int level, int score, int lines_left){
     gotoxy(35 + ab_x, 8 + ab_y);
     std::cout << "┏━━━━━━━━━━━━━━━━━━┓";
     gotoxy(35 + ab_x, 9 + ab_y);
-    std::cout << "┃  STAGE : " << setw(8) << level << "  ┃"; // setw로 정렬 최적화
+    std::cout << "┃  STAGE : " << setw(8) << level << "  ┃"; 
 
     // 3. SCORE 정보 출력
     gotoxy(35 + ab_x, 10 + ab_y);
@@ -121,7 +121,7 @@ void ConsoleRenderer::draw_logo() {
     for (const char* line : frames) {
         gotoxy(logo_x, logo_y++);
         std::cout << line;
-        Sleep(100); // 애니메이션 효과
+        Sleep(100); 
     }
     ColorUtility::apply(Color::WHITE);
 }
