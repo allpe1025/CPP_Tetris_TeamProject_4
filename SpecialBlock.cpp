@@ -3,7 +3,7 @@
 SpecialBlock::SpecialBlock()
 	:Block(0)
 {
-	m_type = rand() % 3;
+	m_type = rand() % 3;	//특수블록의 타입에 따라 출력 문자와 능력이 변함
 }
 
 std::string SpecialBlock::get_display_text() const
