@@ -30,7 +30,7 @@ void ConsoleRenderer::draw_board(const Board& board, int level){
 }
 void ConsoleRenderer::draw_block(const Block& block, int x, int y){
     ColorUtility::apply(static_cast<Color>(block.get_color()));
-    //auto shape_data = block.get_shape();    //auto를 반환하는 함수를 정의되기 전에 사용할 수 없습니다
+    auto shape_data = block.get_shape();    //get_shape함수를 Block.h 파일에 body에 구현 필요
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
             if (shape_data[i][j] == 1) {
@@ -41,7 +41,7 @@ void ConsoleRenderer::draw_block(const Block& block, int x, int y){
     }
 }
 void ConsoleRenderer::erase_block(const Block& block, int x, int y){
-    //auto shape_data = block.get_shape();    
+    auto shape_data = block.get_shape();    
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
             if (shape_data[i][j] == 1) {
@@ -67,7 +67,7 @@ void ConsoleRenderer::draw_next_block(const class Block& next){
         }
     }
     ColorUtility::apply(static_cast<Color>(next.get_color()));
-    //auto shape_data = next.get_shape();
+    auto shape_data = next.get_shape();
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
