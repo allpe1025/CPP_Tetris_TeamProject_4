@@ -1,7 +1,7 @@
 ﻿#include "ConsoleRenderer.h"
-#include "Block.h"
 #include<iostream>
 #include <iomanip>
+
 using namespace std;
 void ConsoleRenderer::gotoxy(int x, int y) {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -10,15 +10,17 @@ void ConsoleRenderer::gotoxy(int x, int y) {
 }
 void ConsoleRenderer::draw_board(const Board& board, int level){
     Color wall_color = static_cast<Color>((level % 6) + 1);
-
-    for (int i = 0; i < 21; i++) {              //board 21행 14열
-        for (int j = 0; j < 14; j++) {
-            gotoxy(j * 2 + ab_x, i + ab_y);
-            if (j == 0 || j == 13 || i == 20) {
+    Color fixed_block_color = Color::GRAY;
+   
+    for (int y = 0; y < Board::height; y++) {
+        for (int x = 0; x < Board::width; x++) {
+            Cell cell_type = board.get_cell(x, y);
+            gotoxy(x * 2 + ab_x, y + ab_y);
+            if (cell_type == Cell::Wall ) {
                 ColorUtility::apply(wall_color);
-                cout << "■";
+                cout << "▨";
             }
-            else if (/*Board.get_Cell(j, i) != 0*/ false) {
+            else if (cell_type == Cell::Fixed) {
                 ColorUtility::apply(Color::GRAY);
                 cout << "■";
             }
