@@ -1,4 +1,4 @@
-﻿#include "Board.h"
+#include "Board.h"
 #include "Block.h"
 
 Board::Board()
@@ -24,34 +24,56 @@ void Board::reset()
 
 bool Board::check_collision(const Block& block) const
 {
-    for (const auto& cell : block.get_cell()) {
-        int x = cell.x;
-        int y = cell.y;
+    const char (*shape)[4] = block.get_shape();
 
-        if (x < 0 || x >= width || y >= height) {
-            return true;
-        }
+    int block_x = block.get_x();
+    int block_y = block.get_y();
 
-        if (y < 0) {
-            continue;
-        }
+    for (int row = 0; row < 4; row++) {
+        for (int col = 0; col < 4; col++) {
+            if (shape[row][col] == 0) {
+                continue;
+            }
 
-        if (grid[y][x] != Cell::Empty) {
-            return true;
+            int x = block_x + col;
+            int y = block_y + row;
+
+            if (x < 0 || x >= width || y >= height) {
+                return true;
+            }
+
+            if (y < 0) {
+                continue;
+            }
+
+            if (grid[y][x] != Cell::Empty) {
+                return true;
+            }
         }
     }
 
     return false;
 }
 
-void Board::merge_block(const Block& block)
+vvoid Board::merge_block(const Block& block)
 {
-    for (const auto& cell : block.get_cell()) {
-        int x = cell.x;
-        int y = cell.y;
+    const char (*shape)[4] = block.get_shape();
 
-        if (is_inside(x, y)) {
-            grid[y][x] = Cell::Fixed;
+    int block_x = block.get_x();
+    int block_y = block.get_y();
+
+    for (int row = 0; row < 4; row++) {
+        for (int col = 0; col < 4; col++) {
+            if (shape[row][col] == 0) {
+                continue;
+            }
+
+            int x = block_x + col;
+            int y = block_y + row;
+
+            if (is_inside(x, y)) {
+                grid[y][x] = Cell::Fixed;
+            }
         }
     }
 }
