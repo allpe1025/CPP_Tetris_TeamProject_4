@@ -14,6 +14,26 @@ struct GameStats
     int cleared_in_stage = 0;       // 현재 스테이지 내에서 지운 라인 수 (레벨업 카운터)
 };
 
+// 게임 모드 (시작 시 사용자 선택). 1~5 입력값과 그대로 매핑된다.
+// === 팀원 작업 위치 ===
+//   Basic        — 본인(신정우). 기본 동작. 별도 분기 없음.
+//   Inverted     — 좌우/회전 키 반대로. → Game::handle_input 분기 추가.
+//   HiddenStack  — 블록이 내려가는 중에는 바닥에 쌓인 블록을 숨김. → Game::render_frame
+//                  의 draw_board 호출 직전 + on_block_landed 시점에 분기.
+//                  세부 시점은 "이벤트 트리거"를 직접 정의해서 사용 (스폰 ↔ 내림 시작).
+//   SpecialBlock — 일정 확률로 특수 효과를 가진 블록 등장. → Game::spawn_next_block
+//                  에서 next 블록을 특수형으로 교체. 효과 적용은 on_block_landed.
+//   Quest        — 줄 N개 클리어 등 조건 달성 시 보상. → Game::on_block_landed 의
+//                  점수 가산 다음 줄에 퀘스트 상태 갱신 분기.
+enum class GameMode
+{
+    Basic        = 1,
+    Inverted     = 2,
+    HiddenStack  = 3,
+    SpecialBlock = 4,
+    Quest        = 5,
+};
+
 // 전체 게임 흐름을 제어하는 오케스트레이터.
 // Board / StageManager / Block 은 직접 소유하고,
 // Renderer / InputManager 는 참조로 주입받는다.
@@ -29,6 +49,7 @@ private:
     InputManager& input;
     bool          running      = false;
     int           gravity_tick = 0;     // 자동 낙하 카운터: stage.speed 이상이면 1칸 낙하
+    GameMode      mode         = GameMode::Basic;   // 시작 시 ask_game_mode() 로 선택됨
 
     // === 부분 갱신용 더티 플래그 ===
     // 데이터가 변할 때만 해당 영역을 다시 그린다 (매 프레임 전체 redraw 방지 → 깜빡임 감소).
@@ -53,6 +74,7 @@ private:
     void render_frame();                // 한 프레임 화면 출력 (더티 플래그 기반 부분 갱신)
     bool any_dirty() const;             // 그릴 게 있는지
 
+    int  ask_game_mode();               // 시작 시 1~5 모드 선택을 사용자에게 받음 (레벨 선택보다 먼저)
     int  ask_start_level();             // 시작 시 1~8 레벨 선택을 사용자에게 받음 (원본 input_data 역할)
     void reset_state(int start_level);  // 새 판 시작용 — 보드/통계/블록 모두 초기화
     void wait_any_key();                // 콘솔에서 아무 키나 눌릴 때까지 블로킹
