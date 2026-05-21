@@ -2,20 +2,19 @@
 
 char InputManager::get_input()
 {
-    if (_kbhit()) {
-        int key = _getch();
-        if (key == 0xffffffe0) { // È®ÀåÅ°
-            key = _getch();
-            switch (key) {
-            case 0x4b: return 'l';  //¿ŞÂÊ ¹æÇâÅ°
-            case 0x4d: return 'r';  //¿À¸¥ÂÊ ¹æÇâÅ°
-            case 0x48: return 'u';  //À§ ¹æÇâÅ°
-            case 0x50: return 'd';  //¾Æ·¡ ¹æÇâÅ°
-            }
+    if (!_kbhit()) return 0;
+
+    int key = _getch();
+    if (key == 0xE0) {                          // ë°©í–¥í‚¤ prefix â€” ë‘ ë²ˆì§¸ _getch ê°€ ì‹¤ì œ í‚¤
+        key = _getch();
+        switch (key) {
+        case 0x4b: return 'l';                  // â† ì™¼ìª½
+        case 0x4d: return 'r';                  // â†’ ì˜¤ë¥¸ìª½
+        case 0x48: return 'u';                  // â†‘ ìœ„ (íšŒì „)
+        case 0x50: return 'd';                  // â†“ ì•„ë˜ (ì†Œí”„íŠ¸ ë“œë¡­)
         }
-        else {
-            if (key == 32) return 's';  //½ºÆäÀÌ½º¹Ù
-        }
+        return 0;
     }
+    if (key == 32) return 's';                  // ìŠ¤í˜ì´ìŠ¤ (í•˜ë“œ ë“œë¡­)
     return 0;
 }
