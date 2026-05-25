@@ -168,7 +168,8 @@ void Game::on_block_landed()
         running = false;
         return;
     }
-
+    renderer.draw_block(*current, current->get_x(), current->get_y());
+    Sleep(100);                           // 착지한 블록 0.1초 출력
     board.merge_block(*current);
 
     // 1) 가득 찬 줄 탐지 (보드는 아직 변경 X)
