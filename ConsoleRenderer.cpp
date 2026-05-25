@@ -1,4 +1,4 @@
-#include "ConsoleRenderer.h"
+﻿#include "ConsoleRenderer.h"
 #include "Board.h"
 #include "Block.h"
 #include <iostream>
@@ -14,8 +14,16 @@ void ConsoleRenderer::gotoxy(int x, int y)
     SetConsoleCursorPosition(hConsole, pos);
 }
 
+void ConsoleRenderer::hide_cursor()
+{
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO info = { 1, FALSE };
+    SetConsoleCursorInfo(hConsole, &info);
+}
+
 void ConsoleRenderer::draw_board(const Board& board, int level)
 {
+    hide_cursor();
     Color wall_color = static_cast<Color>((level % 6) + 1);     // 벽 색: 레벨마다 6색을 순환
 
     for (int y = 0; y < Board::height; y++) {
@@ -35,6 +43,7 @@ void ConsoleRenderer::draw_board(const Board& board, int level)
             }
         }
     }
+    gotoxy(0, Board::height + ab_y + 2);
 }
 
 void ConsoleRenderer::draw_block(const Block& block, int x, int y)
@@ -49,6 +58,7 @@ void ConsoleRenderer::draw_block(const Block& block, int x, int y)
             cout << block.get_display_text();
         }
     }
+    gotoxy(0, Board::height + ab_y + 2);
 }
 
 void ConsoleRenderer::erase_block(const Block& block, int x, int y)
@@ -62,6 +72,7 @@ void ConsoleRenderer::erase_block(const Block& block, int x, int y)
             cout << "  ";
         }
     }
+    gotoxy(0, Board::height + ab_y + 2);
 }
 
 void ConsoleRenderer::draw_next_block(const Block& next, int level)
@@ -87,6 +98,7 @@ void ConsoleRenderer::draw_next_block(const Block& next, int level)
             cout << "■";
         }
     }
+    gotoxy(0, Board::height + ab_y + 2);
 }
 
 void ConsoleRenderer::draw_stats(int level, int score, int lines_left)
@@ -104,6 +116,7 @@ void ConsoleRenderer::draw_stats(int level, int score, int lines_left)
     gotoxy(35 + ab_x, 13 + ab_y); cout << setw(10) << lines_left;
 
     ColorUtility::apply(Color::WHITE);
+    gotoxy(0, Board::height + ab_y + 2);
 }
 
 void ConsoleRenderer::animate_line_clear(int row)
@@ -120,6 +133,7 @@ void ConsoleRenderer::animate_line_clear(int row)
         cout << "  ";
         Sleep(10);
     }
+    gotoxy(0, Board::height + ab_y + 2);
 }
 
 void ConsoleRenderer::draw_game_over()
@@ -128,22 +142,24 @@ void ConsoleRenderer::draw_game_over()
     gotoxy(15 + ab_x, 8  + ab_y); cout << "┏━━━━━━━━━━━━━┓";
     gotoxy(15 + ab_x, 9  + ab_y); cout << "┃  GAME OVER  ┃";
     gotoxy(15 + ab_x, 10 + ab_y); cout << "┗━━━━━━━━━━━━━┛";
+    gotoxy(0, Board::height + ab_y + 2);
 }
 
 void ConsoleRenderer::draw_logo()
 {
+    
     // 원본 show_logo 의 6줄 TETRIS 글자 + "Please Press Any Key" 메시지 이식.
     ColorUtility::apply(Color::YELLOW);
     int logo_x = 13 + ab_x;
     int logo_y = 3  + ab_y;
     const char* frames[] = {
-        "┏━━━━━━━━━━━━━━━━━━━━━━━┓",
-        "┃◆◆◆  ◆◆◆  ◆◆◆   ◆◆     ◆   ◆◆◆ ┃",
-        "┃  ◆    ◆        ◆     ◆ ◆    ◆   ◆     ┃",
-        "┃  ◆    ◆◆◆    ◆     ◆◆     ◆     ◆   ┃",
-        "┃  ◆    ◆        ◆     ◆ ◆    ◆       ◆ ┃",
-        "┃  ◆    ◆◆◆    ◆     ◆  ◆   ◆   ◆◆◆ ┃",
-        "┗━━━━━━━━━━━━━━━━━━━━━━━┛"
+        "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓",
+        "┃◆◆◆  ◆◆◆  ◆◆◆   ◆◆◆    ◆   ◆◆◆  ┃",
+        "┃  ◆    ◆        ◆     ◆ ◆    ◆   ◆      ┃",
+        "┃  ◆    ◆◆◆    ◆     ◆◆     ◆     ◆    ┃",
+        "┃  ◆    ◆        ◆     ◆ ◆    ◆       ◆  ┃",
+        "┃  ◆    ◆◆◆    ◆     ◆  ◆   ◆   ◆◆◆  ┃",
+        "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
     };
     for (const char* line : frames) {           // 한 줄씩 타이핑 효과
         gotoxy(logo_x, logo_y++);
@@ -173,9 +189,11 @@ void ConsoleRenderer::draw_logo_demo()
         Block demo(rand() % 7, rand() % 4, x, 14);
         draw_block(demo, demo.get_x(), demo.get_y());
     }
+    gotoxy(0, Board::height + ab_y + 2);
 }
 
 void ConsoleRenderer::clear()
 {
     system("cls");
-}
+} 
+
