@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <string>
 
 // 테트로미노 한 개를 표현한다.
@@ -58,6 +58,8 @@ public:
     void move_up()      { y--; }                            // 충돌 시 롤백 전용
     void rotate()       { angle = (angle + 1) % 4; }
     void back_rotate()  { angle = (angle + 3) % 4; }        // 회전 충돌 시 롤백 전용
+
+    virtual void execute_effect(class Board& board) {}      // 특수블록 효과 (Block 객체는 아무일도 안함)
 
 protected:
     // === setter (파생 클래스 전용) ===
