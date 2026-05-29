@@ -40,6 +40,7 @@ private:
     bool dirty_stats = true;
 	bool dirty_hold = true;
     std::unique_ptr<Block> last_drawn_block; // 직전에 그린 블록의 사본 (이전 위치/모양을 지우기 위해)
+    std::unique_ptr<Block> last_drawn_ghost; // 직전에 그린 고스트 블록 사본 (이전 위치/모양을 지우기 위해)
 
 public:
     Game(IRenderer& r, InputManager& i);

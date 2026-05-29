@@ -248,3 +248,18 @@ void ConsoleRenderer::draw_hold_block(const Block* hold, int level)
     ColorUtility::apply(Color::WHITE);
     gotoxy(0, Board::height + ab_y + 2);
 }
+
+void ConsoleRenderer::draw_ghost_block(const Block& ghost, int x, int y)
+{
+    ColorUtility::apply(Color::GRAY);
+    auto shape_data = ghost.get_shape();
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            if (shape_data[i][j] != 1) continue;
+            if (i + y < 0) continue;                            // 보드 위쪽 바깥은 그리지 않음 (스폰 시 누수 방지)
+            gotoxy((j + x) * 2 + ab_x, (i + y) + ab_y);
+            cout << "□";
+        }
+    }
+    gotoxy(0, Board::height + ab_y + 2);
+}
