@@ -10,7 +10,7 @@ class Block;
 class ConsoleRenderer : public IRenderer
 {
 private:
-    int ab_x = 2;                       // 보드 좌상단의 화면 절대 좌표
+    int ab_x = 18;
     int ab_y = 1;
 
     void gotoxy(int x, int y);
