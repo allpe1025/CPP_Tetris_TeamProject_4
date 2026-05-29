@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Color.h"
 #include "IRenderer.h"
 
@@ -23,6 +23,7 @@ public:
     void draw_next_block(const Block& next, int level) override;        // 다음 블록 미리보기 (박스 색 = 다음 스테이지)
     void draw_stats(int level, int score, int lines_left) override;     // STAGE / SCORE / LINES 박스
     void animate_line_clear(int row) override;                          // 가득 찬 줄 □ 깜빡임 효과
+    void draw_hold_block(const Block* hold, int level) override;        // 홀드 블록 (박스 + 블록)
 
     void draw_game_over() override;     // GAME OVER 박스
     void draw_logo() override;          // 타이틀 (타이핑 효과)

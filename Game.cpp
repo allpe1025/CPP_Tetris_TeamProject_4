@@ -69,7 +69,9 @@ void Game::reset_state(int start_level)
     spawn_next_block();
     renderer.clear();
     last_drawn_block.reset();
-    dirty_board = dirty_block = dirty_next = dirty_stats = true;
+	hold.reset();
+	can_hold = true;
+    dirty_board = dirty_block = dirty_next = dirty_stats = dirty_hold = true;
 }
 
 void Game::wait_any_key()
@@ -103,6 +105,7 @@ void Game::handle_input()
         break;
     case 'u': try_rotate();    break;       // 회전
     case 's': hard_drop();     break;       // 하드 드롭
+	case 'h': hold_block();    break;       // 홀드
     default:                   break;       // 입력 없음 (0) 또는 미정의 키
     }
 }
@@ -212,12 +215,13 @@ void Game::spawn_next_block()
     // gravity_tick 은 일부러 리셋하지 않음 — 원본의 메인 루프 카운터처럼 위상 연속 유지
     dirty_block = true;
     dirty_next  = true;
+	can_hold = true;            // 새 블록이 등장했으므로 홀드 사용 가능
     last_drawn_block.reset();                   // 직전에 그린 블록은 이미 보드에 merge 됨 → 추적 무효화
 }
 
 bool Game::any_dirty() const
 {
-    return dirty_board || dirty_block || dirty_next || dirty_stats;
+    return dirty_board || dirty_block || dirty_next || dirty_stats || dirty_hold;
 }
 
 void Game::render_frame()
@@ -252,12 +256,41 @@ void Game::render_frame()
         dirty_next = false;
     }
 
-    // 5) 통계 박스
+	// 5) 홀드 블록
+    if (dirty_hold) {
+        renderer.draw_hold_block(hold.get(), stage.display_level());
+        dirty_hold = false;
+    }
+
+    // 6) 통계 박스
     if (dirty_stats) {
         int lines_left = stage.current().clear_line - stats.cleared_in_stage;
         if (lines_left < 0) lines_left = 0;
         renderer.draw_stats(stage.display_level(), stats.score, lines_left);
         dirty_stats = false;
     }
+}
+
+void Game::hold_block()
+{
+	if (!current || !can_hold) return;
+    // 처음 홀드하는 경우: current → hold, next → current, 새 next 생성
+	if (!hold) {     
+		hold = std::move(current);
+		current = std::move(next);
+		next = std::make_unique<Block>(stage.current().stick_rate);
+        dirty_next = true;
+    }
+    else {
+		//이미 홀드한 블록이 있는 경우: current ↔ hold 스왑
+		std::swap(current, hold);
+    }
+
+	current->reset_position();    // 홀드 후 현재 블록은 새로 등장하는 것처럼 위치/회전 초기화
+	hold->reset_position();       // 홀드에 들어간 블록도 미리보기용으로 초기회
+
+	can_hold = false;            // 착지 전까지 홀드 사용 불가
+	dirty_block = true;
+	dirty_hold = true;
 }
 

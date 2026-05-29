@@ -25,10 +25,12 @@ private:
     GameStats     stats;
     std::unique_ptr<Block> current;     // 현재 조작 중인 블록
     std::unique_ptr<Block> next;        // 다음에 등장할 블록 (미리보기용)
+	std::unique_ptr<Block> hold;        // 홀드한 블록
     IRenderer&    renderer;
     InputManager& input;
     bool          running      = false;
     int           gravity_tick = 0;     // 자동 낙하 카운터: stage.speed 이상이면 1칸 낙하
+	bool          can_hold     = true;      // 홀드 사용 가능 여부 (착지 후에만 true로 리셋)
 
     // === 부분 갱신용 더티 플래그 ===
     // 데이터가 변할 때만 해당 영역을 다시 그린다 (매 프레임 전체 redraw 방지 → 깜빡임 감소).
@@ -36,6 +38,7 @@ private:
     bool dirty_block = true;
     bool dirty_next  = true;
     bool dirty_stats = true;
+	bool dirty_hold = true;
     std::unique_ptr<Block> last_drawn_block; // 직전에 그린 블록의 사본 (이전 위치/모양을 지우기 위해)
 
 public:
@@ -57,4 +60,5 @@ private:
     void reset_state(int start_level);  // 새 판 시작용 — 보드/통계/블록 모두 초기화
     void wait_any_key();                // 콘솔에서 아무 키나 눌릴 때까지 블로킹
     void wait_for_logo_key();           // 로고 화면용: 데모 블록 깜빡임 + 키 대기
+	void hold_block();                  // 홀드 → 현재 블록과 홀드 블록 교체. 홀드가 비어있으면 현재 블록을 홀드로 보냄
 };

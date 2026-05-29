@@ -197,3 +197,54 @@ void ConsoleRenderer::clear()
     system("cls");
 } 
 
+void ConsoleRenderer::draw_hold_block(const Block* hold, int level)
+{
+    const int box_x = -7;
+    const int box_y = 1;
+    const int box_width = 6;
+    const int box_height = 6;
+
+    // 제목 출력
+    ColorUtility::apply(Color::GRAY);
+    gotoxy(box_x * 2 + ab_x, (box_y - 1) + ab_y);
+    cout << "HOLD";
+
+    // 박스 전체 그림
+    Color box_color = static_cast<Color>((level % 6) + 1);
+    ColorUtility::apply(box_color);
+
+    for (int i = 0; i < box_height; i++) {
+        for (int j = 0; j < box_width; j++) {
+            gotoxy((j + box_x) * 2 + ab_x, (i + box_y) + ab_y);
+
+            if (i == 0 || i == box_height - 1 || j == 0 || j == box_width - 1) {
+                cout << "■";
+            }
+            else {
+                cout << "  ";
+            }
+        }
+    }
+
+    if (hold == nullptr) {
+        ColorUtility::apply(Color::WHITE);
+        gotoxy(0, Board::height + ab_y + 2);
+        return;
+    }
+
+    ColorUtility::apply(static_cast<Color>(hold->get_color()));
+
+    auto shape_data = hold->get_shape();
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            if (shape_data[i][j] != 1) continue;
+
+            gotoxy((j + box_x + 1) * 2 + ab_x, (i + box_y + 1) + ab_y);
+            cout << hold->get_display_text();
+        }
+    }
+
+    ColorUtility::apply(Color::WHITE);
+    gotoxy(0, Board::height + ab_y + 2);
+}
