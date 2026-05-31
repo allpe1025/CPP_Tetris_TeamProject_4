@@ -15,7 +15,7 @@ private:
 
     void gotoxy(int x, int y);
     void hide_cursor();        // 커서 숨기기
-    void hide_cursor();        // 커서 숨기기
+    
 
 public:
     void draw_board(const Board& board, int level) override;            // 보드 외곽 + 고정 블록
