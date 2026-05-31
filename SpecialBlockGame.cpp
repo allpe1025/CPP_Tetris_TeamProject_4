@@ -1,5 +1,5 @@
 ﻿#include "SpecialBlockGame.h"
-#include "StarBlock.h"      // 각 특수블록 헤더가 있다고 가정
+#include "StarBlock.h"
 #include "DiamondBlock.h"
 #include "CircleBlock.h"
 #include <cstdlib>
@@ -31,8 +31,4 @@ void SpecialBlockGame::spawn_next_block()
     set_dirty_block(true);
     set_dirty_next(true);
     reset_last_drawn();
-}
-
-void SpecialBlockGame::on_block_landed()
-{
 }

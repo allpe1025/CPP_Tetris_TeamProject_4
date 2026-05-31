@@ -1,4 +1,4 @@
-#include "InputManager.h"
+﻿#include "InputManager.h"
 
 char InputManager::get_input()
 {
@@ -16,5 +16,9 @@ char InputManager::get_input()
         return 0;
     }
     if (key == 32) return 's';                  // 스페이스 (하드 드롭)
+    else if (key == 'q' || key == 'Q') return 'q';
+    else if (key == 'w' || key == 'W') return 'w';
+    else if (key == 'e' || key == 'E') return 'e';
+    else if (key == 't' || key == 'T') return 't';
     return 0;
 }

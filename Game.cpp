@@ -93,9 +93,12 @@ void Game::wait_for_logo_key()
     _getch();
 }
 
-void Game::handle_input()
+void Game::handle_input(char c)
 {
-    switch (input.get_input()) {
+    if (c == 0) {
+        c = input.get_input();
+    }
+    switch (c) {
     case 'l': try_move(-1, 0); break;       // 좌
     case 'r': try_move( 1, 0); break;       // 우
     case 'd':                               // 소프트 드롭: 못 내려가면 즉시 착지
@@ -168,6 +171,9 @@ void Game::on_block_landed()
         running = false;
         return;
     }
+
+    // 특수 블록 능력 발동 (특수 블록이 아니면 아무일도 안함)
+    get_current()->execute_effect(get_board());
 
     board.merge_block(*current);
 

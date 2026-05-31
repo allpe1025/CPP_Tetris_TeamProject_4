@@ -44,30 +44,34 @@ public:
     void run();                         // 메인 루프 진입점. 게임 오버까지 블로킹
 
 private:
-    virtual void handle_input();        // 한 프레임의 입력 1회 폴링 후 분기 처리
     void tick();                        // 자동 낙하 1칸. 착지 시 on_block_landed 호출
     bool try_move(int dx, int dy);      // 이동 시도 → 충돌 시 롤백, 성공 여부 반환
     bool try_rotate();                  // 회전 시도 → 충돌 시 back_rotate로 롤백
     void hard_drop();                   // 한 번에 바닥까지 낙하
-    virtual void on_block_landed();     // merge → clear → 점수/레벨 갱신 → 다음 스폰
     virtual void spawn_next_block();    // next → current 승격 후 새 next 생성
-    void render_frame();                // 한 프레임 화면 출력 (더티 플래그 기반 부분 갱신)
     bool any_dirty() const;             // 그릴 게 있는지
 
     int  ask_start_level();             // 시작 시 1~8 레벨 선택을 사용자에게 받음 (원본 input_data 역할)
-    void reset_state(int start_level);  // 새 판 시작용 — 보드/통계/블록 모두 초기화
     void wait_any_key();                // 콘솔에서 아무 키나 눌릴 때까지 블로킹
     void wait_for_logo_key();           // 로고 화면용: 데모 블록 깜빡임 + 키 대기
 
-// 자식클래스에게 필요한 getter, setter 함수
+// 파생 클래스에게 필요한 getter, setter 함수 및 주요 함수
 protected:
     Board& get_board() { return board; }                        // Board 참조로 반환
     const StageManager& get_stage() const { return stage; }     // StageManager 참조로 반환
     GameStats& get_stats() { return stats; }                    // GameStats 구조체 참조로 반환
     std::unique_ptr<Block>& get_current() { return current; }   // 현재 블록 참조로 반환
     std::unique_ptr<Block>& get_next() { return next; }         // 다음 블록 참조로 반환
+    InputManager& get_input() { return input; }                 // InputManager 객체 참조로 반환
+    IRenderer& get_renderer() { return renderer; }              // IRenderer 객체 참조로 반환
 
     void set_dirty_block(bool b) { dirty_block = b; }           // dirty_block 값 수정
     void set_dirty_next(bool b) { dirty_next = b; }             // dirty_next 값 수정
+    void set_dirty_board(bool b) { dirty_board = b; }           // dirty_board 값 수정
     void reset_last_drawn() { last_drawn_block.reset(); }       // last_drawn_block 메모리 해제
+
+    virtual void render_frame();        // 한 프레임 화면 출력 (더티 플래그 기반 부분 갱신)
+    virtual void handle_input(char c = 0);      // 한 프레임의 입력 1회 폴링 후 분기 처리
+    virtual void on_block_landed();                             // merge → clear → 점수/레벨 갱신 → 다음 스폰
+    virtual void reset_state(int start_level);                  // 새 판 시작용 — 보드/통계/블록 모두 초기화
 };

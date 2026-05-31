@@ -1,8 +1,10 @@
-#include <cstdlib>
+﻿#include <cstdlib>
 #include <ctime>
 #include "ConsoleRenderer.h"
 #include "InputManager.h"
 #include "Game.h"
+#include "SpecialBlockGame.h"
+#include "SkillGame.h"
 
 int main()
 {
@@ -10,7 +12,7 @@ int main()
 
     ConsoleRenderer renderer;
     InputManager    input;
-    Game game(renderer, input);
+    SkillGame game(renderer, input);
     game.run();
     return 0;
 }
