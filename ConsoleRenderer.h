@@ -14,8 +14,6 @@ private:
     int ab_y = 1;
 
     void gotoxy(int x, int y);
-    void hide_cursor();        // 커서 숨기기
-   
 
 public:
     void draw_board(const Board& board, int level, GameMode mode) override;            // 보드 외곽 + 고정 블록
@@ -31,4 +29,5 @@ public:
     void draw_logo() override;          // 타이틀 (타이핑 효과)
     void draw_logo_demo() override;     // 로고 아래 데모 블록 한 프레임
     void clear() override;              // 콘솔 전체 정리
+    
 };
