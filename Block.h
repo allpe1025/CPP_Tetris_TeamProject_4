@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <string>
 
 // 테트로미노 한 개를 표현한다.
