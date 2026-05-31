@@ -124,24 +124,29 @@ void Game::wait_for_logo_key()
 
 void Game::handle_input()
 {
-    // === 팀원 작업: Inverted 모드 ===
-    // mode == GameMode::Inverted 일 때 좌우 키 + 회전 방향을 반전한다.
-    // 예시 (참고용):
-    //   bool inv = (mode == GameMode::Inverted);
-    //   case 'l': try_move(inv ?  1 : -1, 0); break;
-    //   case 'r': try_move(inv ? -1 :  1, 0); break;
-    //   case 'u':
-    //       if (inv) { current->back_rotate(); if (board.check_collision(*current)) current->rotate();  else dirty_block = true; }
-    //       else     { try_rotate(); }
-    //       break;
-    // (현재는 Basic 동작만)
+ 
+    bool inv = (mode == GameMode::Inverted);    //Inverted 모드에서 좌우/회전 키 반전
+
     switch (input.get_input()) {
-    case 'l': try_move(-1, 0); break;       // 좌
-    case 'r': try_move( 1, 0); break;       // 우
+    case 'l': try_move(inv ?  1 : -1, 0); break;       // 좌
+    case 'r': try_move(inv ? -1 :  1, 0); break;       // 우
     case 'd':                               // 소프트 드롭: 못 내려가면 즉시 착지
         if (!try_move(0, 1)) on_block_landed();
         break;
-    case 'u': try_rotate();    break;       // 회전
+    case 'u': 
+        if(inv){
+            current->back_rotate();
+            if (board.check_collision(*current)) {
+                current->rotate();
+            }
+            else {
+                dirty_block = true;
+            }
+        }
+        else{
+            try_rotate();    
+        }
+        break;       // 회전
     case 's': hard_drop();     break;       // 하드 드롭
 	case 'h': hold_block();    break;       // 홀드
     default:                   break;       // 입력 없음 (0) 또는 미정의 키
@@ -268,16 +273,7 @@ void Game::spawn_next_block()
 {
     current = std::move(next);
     next    = std::make_unique<Block>(stage.current().stick_rate);
-    // === 팀원 작업: SpecialBlock 모드 ===
-    // mode == GameMode::SpecialBlock 일 때 일정 확률로 next 를 "특수 블록" 으로 교체한다.
-    // - 특수 블록은 Block 을 상속한 별도 클래스를 새로 만들거나 (예: SpecialBlock),
-    //   Block 내부에 enum SpecialKind 같은 식별자를 추가하는 두 방식이 가능. 본인이 선택.
-    // - 사용 예 (의사 코드):
-    //     if (mode == GameMode::SpecialBlock && (rand() % 100) < 15) {
-    //         next = std::make_unique<SpecialBlock>(...);
-    //     }
-    // - 특수 효과 발동 시점은 on_block_landed (merge 직후 ~ 점수 가산 사이) 에 분기 추가.
-    // gravity_tick 은 일부러 리셋하지 않음 — 원본의 메인 루프 카운터처럼 위상 연속 유지
+ 
     dirty_block = true;
     dirty_next  = true;
 	can_hold = true;            // 새 블록이 등장했으므로 홀드 사용 가능
@@ -308,27 +304,15 @@ void Game::render_frame()
 		last_drawn_block.reset();
     }
 
-    // 3) 보드 갱신 (벽 색이 바뀌었거나, 줄 삭제·머지 발생 등)
-    //    보드가 블록 영역까지 덮어쓰므로 블록도 다시 그려야 함.
-    // === 팀원 작업: HiddenStack 모드 ===
-    // 현재 블록이 "내려가는 중" 일 때는 쌓인 Fixed 셀을 그리지 않고 벽(Wall)만 그린다.
-    // - "내려가는 중" 판정 기준은 직접 정해야 함 (예: 새 블록이 스폰된 후 첫 hard_drop/soft_drop 입력 발생 시 플래그 ON,
-    //   on_block_landed 끝에서 OFF — Game 멤버 bool falling_started 같은 걸 추가).
-    // - 렌더링 분기: ConsoleRenderer 에 draw_board_hidden(const Board&, int level) 같은 변형 메서드를 추가하거나,
-    //   IRenderer::draw_board 시그니처에 bool hide_fixed 파라미터를 추가.
-    // - 사용 예 (의사 코드):
-    //     if (mode == GameMode::HiddenStack && falling_started)
-    //         renderer.draw_board_hidden(board, stage.display_level());
-    //     else
-    //         renderer.draw_board(board, stage.display_level());
     if (dirty_board) {
-        renderer.draw_board(board, stage.display_level());
+        renderer.draw_board(board, stage.display_level(), mode);
         dirty_board = false;
         dirty_block = true;
     }
 
     // 4) 블록 갱신
     if (dirty_block && current) {
+        if(mode != GameMode::HiddenStack){          //HiddenStack 모드일 때 고스트 블록 안 보이게     
 		Block ghost = *current;    // 고스트 블록은 현재 블록의 사본
 
 		while (!board.check_collision(ghost)) {
@@ -337,9 +321,14 @@ void Game::render_frame()
 		ghost.move_up();           // 충돌한 바로 위가 착지 위치 → 한 칸 올리기
 
 		renderer.draw_ghost_block(ghost, ghost.get_x(), ghost.get_y());   // 고스트 블록 그리기
+        last_drawn_ghost = std::make_unique<Block>(ghost);     // 다음 프레임에서 지우기 위한 사본
+    }
+    else{
+        last_drawn_ghost = nullptr;
+    }
+
         renderer.draw_block(*current, current->get_x(), current->get_y());
         last_drawn_block = std::make_unique<Block>(*current);   // 다음 프레임에서 지우기 위한 사본
-		last_drawn_ghost = std::make_unique<Block>(ghost);     // 다음 프레임에서 지우기 위한 사본
         dirty_block = false;
     }
 

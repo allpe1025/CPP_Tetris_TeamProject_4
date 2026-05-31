@@ -15,10 +15,10 @@ private:
 
     void gotoxy(int x, int y);
     void hide_cursor();        // 커서 숨기기
-    
+   
 
 public:
-    void draw_board(const Board& board, int level) override;            // 보드 외곽 + 고정 블록
+    void draw_board(const Board& board, int level, GameMode mode) override;            // 보드 외곽 + 고정 블록
     void draw_block(const Block& block, int x, int y) override;         // 현재 조작 중인 블록
     void erase_block(const Block& block, int x, int y) override;        // 직전 위치 지우기 (블록 모양 기준)
     void draw_next_block(const Block& next, int level) override;        // 다음 블록 미리보기 (박스 색 = 다음 스테이지)

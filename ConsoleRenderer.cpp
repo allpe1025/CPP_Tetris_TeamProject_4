@@ -1,6 +1,7 @@
 ﻿#include "ConsoleRenderer.h"
 #include "Board.h"
 #include "Block.h"
+#include "Game.h"
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
@@ -21,7 +22,7 @@ void ConsoleRenderer::hide_cursor()
     SetConsoleCursorInfo(hConsole, &info);
 }
 
-void ConsoleRenderer::draw_board(const Board& board, int level)
+void ConsoleRenderer::draw_board(const Board& board, int level, GameMode mode)
 {
     hide_cursor();
     Color wall_color = static_cast<Color>((level % 6) + 1);     // 벽 색: 레벨마다 6색을 순환
@@ -36,7 +37,12 @@ void ConsoleRenderer::draw_board(const Board& board, int level)
             }
             else if (cell_type == Cell::Fixed) {
                 ColorUtility::apply(Color::GRAY);  
-                cout << " ";                                    //쌓인 블록 공백으로 표현
+                if (mode == GameMode::HiddenStack) {
+                    cout << "  ";       // 투명 모드일 때는 쌓인 블록을 공백으로!
+                }      
+                else {
+                    cout << "■";                                    
+                }
             }
             else {
                 cout << "  ";                                   // Empty: 보드 내부 공백

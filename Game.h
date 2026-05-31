@@ -66,7 +66,7 @@ private:
 public:
     Game(IRenderer& r, InputManager& i);
     void run();                         // 메인 루프 진입점. 게임 오버까지 블로킹
-
+    
 private:
     void handle_input();                // 한 프레임의 입력 1회 폴링 후 분기 처리
     void tick();                        // 자동 낙하 1칸. 착지 시 on_block_landed 호출
