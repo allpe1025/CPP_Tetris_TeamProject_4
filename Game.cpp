@@ -21,7 +21,8 @@ void Game::run()
     renderer.draw_logo();
     wait_for_logo_key();                    // 데모 블록 깜빡이며 키 대기 (원본 흐름)
 
-    int start_level = ask_start_level();    // 1~8 선택
+    mode = static_cast<GameMode>(ask_game_mode());  // 1~5 선택 (모드가 레벨 선택보다 먼저)
+    int start_level = ask_start_level();            // 1~8 선택
 
     // 원본은 게임오버 후 init() 호출하며 무한 반복. 동일 흐름.
     while (true) {
@@ -41,6 +42,31 @@ void Game::run()
         // 같은 시작 레벨로 다시 시작 (원본도 init 후 input_data 다시 호출하지만
         // 사용자 입력 흐름을 매번 끊지 않게 여기선 한 번 받은 레벨을 재사용).
     }
+}
+
+int Game::ask_game_mode()
+{
+    // 콘솔 텍스트 입력으로 모드 선택 (ask_start_level 과 동일한 스타일).
+    // 1~5 이외 입력은 다시 받음. 화면을 한 번 비운 뒤 로고 위에 메뉴를 출력한다.
+    renderer.clear();
+    std::cout << "==== Select Game Mode ====\n";
+    std::cout << "  1. Basic         (기본)\n";
+    std::cout << "  2. Inverted      (좌우/회전 키 반전)\n";
+    std::cout << "  3. Hidden Stack  (쌓인 블록 숨김)\n";
+    std::cout << "  4. Special Block (특수 블록 등장)\n";
+    std::cout << "  5. Quest         (퀘스트)\n";
+
+    int m = 0;
+    while (m < 1 || m > 5) {
+        std::cout << "Select Mode[1-5]: ";
+        std::cin >> m;
+        if (std::cin.fail()) {
+            std::cin.clear();
+            std::cin.ignore(1024, '\n');
+            m = 0;
+        }
+    }
+    return m;
 }
 
 int Game::ask_start_level()
@@ -98,6 +124,17 @@ void Game::wait_for_logo_key()
 
 void Game::handle_input()
 {
+    // === 팀원 작업: Inverted 모드 ===
+    // mode == GameMode::Inverted 일 때 좌우 키 + 회전 방향을 반전한다.
+    // 예시 (참고용):
+    //   bool inv = (mode == GameMode::Inverted);
+    //   case 'l': try_move(inv ?  1 : -1, 0); break;
+    //   case 'r': try_move(inv ? -1 :  1, 0); break;
+    //   case 'u':
+    //       if (inv) { current->back_rotate(); if (board.check_collision(*current)) current->rotate();  else dirty_block = true; }
+    //       else     { try_rotate(); }
+    //       break;
+    // (현재는 Basic 동작만)
     switch (input.get_input()) {
     case 'l': try_move(-1, 0); break;       // 좌
     case 'r': try_move( 1, 0); break;       // 우
@@ -193,6 +230,22 @@ void Game::on_block_landed()
         stats.score += 100 + stage.level_index() * 10 + (rand() % 10);
     }
 
+    // === 팀원 작업: Quest 모드 ===
+    // mode == GameMode::Quest 일 때 퀘스트 상태를 갱신하고 달성 시 보상.
+    // - 퀘스트 상태는 Game 멤버로 새로 추가 (예: struct QuestState { int target_lines, cleared; } quests;).
+    //   reset_state() 에서 함께 초기화.
+    // - 갱신 예 (의사 코드):
+    //     if (mode == GameMode::Quest) {
+    //         quests.cleared += cleared;
+    //         if (quests.cleared >= quests.target_lines) {
+    //             stats.score += 500;       // 보너스
+    //             quests.cleared = 0;
+    //             quests.target_lines += 2; // 다음 퀘스트
+    //         }
+    //         dirty_stats = true;
+    //     }
+    // - UI 표기가 필요하면 IRenderer::draw_stats 의 시그니처 확장 또는 draw_quest 메서드 신설.
+
     // 보드/통계 변경 → 다음 프레임에 다시 그림
     dirty_board = true;
     dirty_stats = true;
@@ -215,6 +268,15 @@ void Game::spawn_next_block()
 {
     current = std::move(next);
     next    = std::make_unique<Block>(stage.current().stick_rate);
+    // === 팀원 작업: SpecialBlock 모드 ===
+    // mode == GameMode::SpecialBlock 일 때 일정 확률로 next 를 "특수 블록" 으로 교체한다.
+    // - 특수 블록은 Block 을 상속한 별도 클래스를 새로 만들거나 (예: SpecialBlock),
+    //   Block 내부에 enum SpecialKind 같은 식별자를 추가하는 두 방식이 가능. 본인이 선택.
+    // - 사용 예 (의사 코드):
+    //     if (mode == GameMode::SpecialBlock && (rand() % 100) < 15) {
+    //         next = std::make_unique<SpecialBlock>(...);
+    //     }
+    // - 특수 효과 발동 시점은 on_block_landed (merge 직후 ~ 점수 가산 사이) 에 분기 추가.
     // gravity_tick 은 일부러 리셋하지 않음 — 원본의 메인 루프 카운터처럼 위상 연속 유지
     dirty_block = true;
     dirty_next  = true;
@@ -248,6 +310,17 @@ void Game::render_frame()
 
     // 3) 보드 갱신 (벽 색이 바뀌었거나, 줄 삭제·머지 발생 등)
     //    보드가 블록 영역까지 덮어쓰므로 블록도 다시 그려야 함.
+    // === 팀원 작업: HiddenStack 모드 ===
+    // 현재 블록이 "내려가는 중" 일 때는 쌓인 Fixed 셀을 그리지 않고 벽(Wall)만 그린다.
+    // - "내려가는 중" 판정 기준은 직접 정해야 함 (예: 새 블록이 스폰된 후 첫 hard_drop/soft_drop 입력 발생 시 플래그 ON,
+    //   on_block_landed 끝에서 OFF — Game 멤버 bool falling_started 같은 걸 추가).
+    // - 렌더링 분기: ConsoleRenderer 에 draw_board_hidden(const Board&, int level) 같은 변형 메서드를 추가하거나,
+    //   IRenderer::draw_board 시그니처에 bool hide_fixed 파라미터를 추가.
+    // - 사용 예 (의사 코드):
+    //     if (mode == GameMode::HiddenStack && falling_started)
+    //         renderer.draw_board_hidden(board, stage.display_level());
+    //     else
+    //         renderer.draw_board(board, stage.display_level());
     if (dirty_board) {
         renderer.draw_board(board, stage.display_level());
         dirty_board = false;
