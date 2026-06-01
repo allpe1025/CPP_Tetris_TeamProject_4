@@ -57,10 +57,11 @@ namespace {
 
 int main()
 {
-    // C stdio 와의 동기화 lock 비활성화 → cout 출력 시 sync 비용 제거.
-    // (단, cin.tie() 는 기본(=&cout) 유지 — 프롬프트가 입력 직전에 자동 flush 되어야 하므로.)
-    std::ios::sync_with_stdio(false);
-    std::cout.tie(nullptr);
+    // 주의: std::ios::sync_with_stdio(false) 적용 금지.
+    // Windows 콘솔의 C stdout 은 _IONBF (unbuffered) 인데, sync=false 로 바꾸면 cout 이
+    // 자체 8KB stdio_filebuf 로 전환되어 buffered 가 됨. SetConsoleCursorPosition 은
+    // 영향을 안 받고 즉시 실행되므로, 커서 이동과 실제 셀 출력 시점이 어긋나
+    // 글자가 마지막 커서 위치에 몰리는 렌더 corruption 이 발생함.
 
     std::srand(static_cast<unsigned>(std::time(nullptr)));      // 블록 셔플용 난수 시드
 
