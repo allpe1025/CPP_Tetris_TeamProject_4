@@ -17,11 +17,12 @@ Game::Game(IRenderer& r, InputManager& i)
 
 void Game::run()
 {
-    renderer.clear();
-    renderer.draw_logo();
-    wait_for_logo_key();                    // 데모 블록 깜빡이며 키 대기 (원본 흐름)
-
-    if (!mode_preset) {                                     // main에서 set_mode로 미리 정해진 경우는 건너뜀
+    // main 에서 set_mode 로 모드를 미리 정해준 경우, main 이 이미 로고를 보여줬다고 가정하고 생략.
+    // (main 이 로고 -> 모드 선택 -> 서브클래스 인스턴스화 순서로 흐름을 주도하기 때문)
+    if (!mode_preset) {
+        renderer.clear();
+        renderer.draw_logo();
+        wait_for_logo_key();                // 데모 블록 깜빡이며 키 대기 (원본 흐름)
         mode = static_cast<GameMode>(ask_game_mode());
     }
     int start_level = ask_start_level();            // 1~8 선택
