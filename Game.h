@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <optional>
 #include "Board.h"
 #include "Block.h"
 #include "StageManager.h"
@@ -32,6 +33,16 @@ enum class GameMode
     Quest        = 5,
 };
 
+// 직전 프레임에 그린 블록의 erase 전용 스냅샷.
+// Block 객체를 통째로 heap 에 보관(과거: unique_ptr<Block>)하지 않고, erase 에 필요한 4개 int 만 인라인 보유.
+// → render_frame 호출당 heap 할당이 0회가 됨.
+struct BlockSnapshot {
+    int shape;
+    int angle;
+    int x;
+    int y;
+};
+
 // 전체 게임 흐름을 제어하는 오케스트레이터.
 // Board / StageManager / Block 은 직접 소유하고,
 // Renderer / InputManager 는 참조로 주입받는다.
@@ -58,8 +69,19 @@ private:
     bool dirty_next  = true;
     bool dirty_stats = true;
     bool dirty_hold  = true;
-    std::unique_ptr<Block> last_drawn_block; // 직전에 그린 블록의 사본 (이전 위치/모양을 지우기 위해)
-    std::unique_ptr<Block> last_drawn_ghost; // 직전에 그린 고스트 블록 사본
+
+    // erase 용도 스냅샷 (heap 할당 0회 — POD 16 B × 2).
+    std::optional<BlockSnapshot> last_drawn_block;
+    std::optional<BlockSnapshot> last_drawn_ghost;
+
+    // Ghost 위치 캐시 — 현재 블록의 (x, angle) + 보드 version 이 모두 같으면 ghost 재계산 스킵.
+    struct GhostCache {
+        int basis_x;
+        int basis_angle;
+        int basis_board_version;
+        int ghost_y;
+    };
+    std::optional<GhostCache> ghost_cache;
 
 public:
     Game(IRenderer& r, InputManager& i);
@@ -94,7 +116,11 @@ protected:
     void set_dirty_block(bool b) { dirty_block = b; }           // dirty_block 값 수정
     void set_dirty_next(bool b)  { dirty_next = b; }            // dirty_next 값 수정
     void set_dirty_board(bool b) { dirty_board = b; }           // dirty_board 값 수정
-    void reset_last_drawn() { last_drawn_block.reset(); }       // last_drawn_block 메모리 해제
+    void reset_last_drawn() {                                   // 스냅샷 + ghost 캐시 모두 무효화
+        last_drawn_block.reset();
+        last_drawn_ghost.reset();
+        ghost_cache.reset();
+    }
 
     virtual void spawn_next_block();                            // next → current 승격 후 새 next 생성
     virtual void render_frame();                                // 한 프레임 화면 출력 (더티 플래그 기반 부분 갱신)

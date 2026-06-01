@@ -95,12 +95,10 @@ void Game::reset_state(int start_level)
     gravity_tick = 0;
     current.reset();
     next = std::make_unique<Block>(stage.current().stick_rate);
-    spawn_next_block();
+    spawn_next_block();                     // 내부에서 last_drawn_* / ghost_cache 모두 reset 됨
     renderer.clear();
-    last_drawn_block.reset();
-	last_drawn_ghost.reset();
-	hold.reset();
-	can_hold = true;
+    hold.reset();
+    can_hold = true;
     dirty_board = dirty_block = dirty_next = dirty_stats = dirty_hold = true;
 }
 
@@ -230,13 +228,13 @@ void Game::on_block_landed()
     // 1) 가득 찬 줄 탐지 (보드는 아직 변경 X)
     auto full_rows = board.find_full_lines();
     // 2) 각 줄에 깜빡임 애니메이션 (원본 동작 이식)
-    for (int row : full_rows) {
-        renderer.animate_line_clear(row);
+    for (int i = 0; i < full_rows.count; i++) {
+        renderer.animate_line_clear(full_rows.rows[i]);
     }
     // 3) 실제 줄 제거 + 위 줄 끌어내림
     board.remove_lines(full_rows);
 
-    const int cleared = static_cast<int>(full_rows.size());
+    const int cleared = full_rows.count;
     stats.total_cleared    += cleared;
     stats.cleared_in_stage += cleared;
     // 원본 공식: 줄당 100 + level*10 + rand()%10 (랜덤 보너스 + 레벨 보너스)
@@ -269,9 +267,10 @@ void Game::on_block_landed()
         if (stage.advance()) {
             stats.cleared_in_stage = 0;
             renderer.clear();                   // 벽 색이 바뀌므로 화면 전체 재출력
-            dirty_board = dirty_block = dirty_next = dirty_stats = true;
+            dirty_board = dirty_block = dirty_next = dirty_stats = dirty_hold = true;
             last_drawn_block.reset();           // 이전 잔상 추적 무효화
             last_drawn_ghost.reset();           // 이전 ghost 블록 추적 무효화
+            ghost_cache.reset();                // 화면 초기화됐으니 ghost 캐시도 무효화
         }
     }
 
@@ -282,12 +281,13 @@ void Game::spawn_next_block()
 {
     current = std::move(next);
     next    = std::make_unique<Block>(stage.current().stick_rate);
- 
+
     dirty_block = true;
     dirty_next  = true;
-	can_hold = true;            // 새 블록이 등장했으므로 홀드 사용 가능
-    last_drawn_block.reset();                   // 직전에 그린 블록은 이미 보드에 merge 됨 → 추적 무효화
-	last_drawn_ghost.reset();                   // 직전에 그린 ghost 블록도 사라질 예정 → 추적 무효화
+    can_hold = true;            // 새 블록이 등장했으므로 홀드 사용 가능
+    last_drawn_block.reset();   // 직전에 그린 블록은 이미 보드에 merge 됨 → 추적 무효화
+    last_drawn_ghost.reset();   // 직전에 그린 ghost 블록도 사라질 예정 → 추적 무효화
+    ghost_cache.reset();        // 새 블록이라 ghost 캐시 무효화
 }
 
 bool Game::any_dirty() const
@@ -297,47 +297,69 @@ bool Game::any_dirty() const
 
 void Game::render_frame()
 {
+    // 스냅샷에서 임시 Block 을 stack 에 구성해 erase 호출에 넘김 (heap 할당 X).
+    auto erase_from_snapshot = [&](const BlockSnapshot& s) {
+        Block tmp(s.shape, s.angle, s.x, s.y);
+        renderer.erase_block(tmp, s.x, s.y);
+    };
+
     // 1) 블록이 움직였으면 이전 ghost 블록 먼저 지움
     if (dirty_block && last_drawn_ghost) {
-        renderer.erase_block(*last_drawn_ghost,
-                             last_drawn_ghost->get_x(),
-                             last_drawn_ghost->get_y());
+        erase_from_snapshot(*last_drawn_ghost);
         last_drawn_ghost.reset();
     }
 
     // 2) 블록이 움직였으면 이전 위치 지움 (보드가 함께 dirty면 어차피 덮어쓰니 무해)
     if (dirty_block && last_drawn_block) {
-        renderer.erase_block(*last_drawn_block,
-                             last_drawn_block->get_x(),
-                             last_drawn_block->get_y());
-		last_drawn_block.reset();
+        erase_from_snapshot(*last_drawn_block);
+        last_drawn_block.reset();
     }
 
+    // 3) 보드 갱신
     if (dirty_board) {
         renderer.draw_board(board, stage.display_level(), mode);
         dirty_board = false;
-        dirty_block = true;
+        dirty_block = true;             // 보드 위에 블록 다시 그리기
     }
 
-    // 4) 블록 갱신
+    // 4) 블록 / Ghost 갱신
     if (dirty_block && current) {
-        if(mode != GameMode::HiddenStack){          //HiddenStack 모드일 때 고스트 블록 안 보이게     
-		Block ghost = *current;    // 고스트 블록은 현재 블록의 사본
+        const int cx = current->get_x();
+        const int ca = current->get_angle();
+        const int cshape = current->get_shape_num();
+        const int board_ver = board.version();
 
-		while (!board.check_collision(ghost)) {
-			ghost.move_down();
-		}
-		ghost.move_up();           // 충돌한 바로 위가 착지 위치 → 한 칸 올리기
+        if (mode != GameMode::HiddenStack) {
+            // Ghost 위치 결정 — (x, angle, board_version) 이 모두 같으면 캐시 hit, 재계산 스킵.
+            int ghost_y;
+            if (ghost_cache
+                && ghost_cache->basis_x == cx
+                && ghost_cache->basis_angle == ca
+                && ghost_cache->basis_board_version == board_ver) {
+                ghost_y = ghost_cache->ghost_y;
+            }
+            else {
+                Block ghost = *current;
+                while (!board.check_collision(ghost)) {
+                    ghost.move_down();
+                }
+                ghost.move_up();        // 충돌한 바로 위가 착지 위치
+                ghost_y = ghost.get_y();
+                ghost_cache = GhostCache{cx, ca, board_ver, ghost_y};
+            }
 
-		renderer.draw_ghost_block(ghost, ghost.get_x(), ghost.get_y());   // 고스트 블록 그리기
-        last_drawn_ghost = std::make_unique<Block>(ghost);     // 다음 프레임에서 지우기 위한 사본
-    }
-    else{
-        last_drawn_ghost = nullptr;
-    }
+            // Ghost 그리기 — 스택 Block 으로 구성 (heap X)
+            Block ghost_to_draw(cshape, ca, cx, ghost_y);
+            renderer.draw_ghost_block(ghost_to_draw, cx, ghost_y);
+            last_drawn_ghost = BlockSnapshot{cshape, ca, cx, ghost_y};
+        }
+        else {
+            last_drawn_ghost.reset();
+            ghost_cache.reset();
+        }
 
-        renderer.draw_block(*current, current->get_x(), current->get_y());
-        last_drawn_block = std::make_unique<Block>(*current);   // 다음 프레임에서 지우기 위한 사본
+        renderer.draw_block(*current, cx, current->get_y());
+        last_drawn_block = BlockSnapshot{cshape, ca, cx, current->get_y()};
         dirty_block = false;
     }
 
@@ -349,7 +371,7 @@ void Game::render_frame()
         dirty_next = false;
     }
 
-	// 6) 홀드 블록
+    // 6) 홀드 블록
     if (dirty_hold) {
         renderer.draw_hold_block(hold.get(), stage.display_level());
         dirty_hold = false;
@@ -366,24 +388,25 @@ void Game::render_frame()
 
 void Game::hold_block()
 {
-	if (!current || !can_hold) return;
+    if (!current || !can_hold) return;
     // 처음 홀드하는 경우: current → hold, next → current, 새 next 생성
-	if (!hold) {     
-		hold = std::move(current);
-		current = std::move(next);
-		next = std::make_unique<Block>(stage.current().stick_rate);
+    if (!hold) {
+        hold = std::move(current);
+        current = std::move(next);
+        next = std::make_unique<Block>(stage.current().stick_rate);
         dirty_next = true;
     }
     else {
-		//이미 홀드한 블록이 있는 경우: current ↔ hold 스왑
-		std::swap(current, hold);
+        // 이미 홀드한 블록이 있는 경우: current ↔ hold 스왑
+        std::swap(current, hold);
     }
 
-	current->reset_position();    // 홀드 후 현재 블록은 새로 등장하는 것처럼 위치/회전 초기화
-	hold->reset_position();       // 홀드에 들어간 블록도 미리보기용으로 초기회
+    current->reset_position();    // 홀드 후 현재 블록은 새로 등장하는 것처럼 위치/회전 초기화
+    hold->reset_position();       // 홀드에 들어간 블록도 미리보기용으로 초기화
 
-	can_hold = false;            // 착지 전까지 홀드 사용 불가
-	dirty_block = true;
-	dirty_hold = true;
+    can_hold = false;             // 착지 전까지 홀드 사용 불가
+    dirty_block = true;
+    dirty_hold = true;
+    ghost_cache.reset();          // current 가 바뀌었으므로 ghost 캐시 무효화
 }
 

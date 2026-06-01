@@ -1,4 +1,4 @@
-﻿#include "Board.h"
+#include "Board.h"
 #include "Block.h"
 
 Board::Board()
@@ -9,8 +9,6 @@ Board::Board()
 void Board::reset()
 {
     // 외곽(좌·우·바닥)은 Wall, 내부는 Empty 로 초기화
-    grid.assign(height, std::vector<Cell>(width, Cell::Empty));
-
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             if (x == left_wall || x == right_wall || y == floor) {
@@ -21,6 +19,7 @@ void Board::reset()
             }
         }
     }
+    ++version_;
 }
 
 bool Board::check_collision(const Block& block) const
@@ -57,6 +56,7 @@ void Board::merge_block(const Block& block)
     int block_x = block.get_x();
     int block_y = block.get_y();
 
+    bool changed = false;
     for (int row = 0; row < 4; row++) {
         for (int col = 0; col < 4; col++) {
             if (shape[row][col] == 0) continue;
@@ -64,48 +64,59 @@ void Board::merge_block(const Block& block)
             int y = block_y + row;
             if (is_inside(x, y)) {
                 grid[y][x] = Cell::Fixed;                   // 굳어서 보드의 일부가 됨
+                changed = true;
             }
         }
     }
+    if (changed) ++version_;
 }
 
-std::vector<int> Board::find_full_lines() const
+Board::FullLines Board::find_full_lines() const
 {
-    std::vector<int> rows;
+    FullLines result{};
     for (int y = floor - 1; y >= 0; y--) {                  // 바닥부터 위로 스캔
         if (is_full_line(y)) {
-            rows.push_back(y);
+            if (result.count < max_clear) {
+                result.rows[result.count++] = y;
+            }
         }
     }
-    return rows;
+    return result;
 }
 
-void Board::remove_lines(const std::vector<int>& rows)
+void Board::remove_lines(const FullLines& full)
 {
     // clear_line 을 여러 번 호출하면 인덱스가 어긋나므로 (한 번 shift 하면 이후 인덱스가 다 밀림),
     // 컬럼 단위로 한 번에 압축: "지울 행이 아닌" 셀만 모아 → 바닥부터 다시 채움 → 위는 Empty.
-    if (rows.empty()) return;
+    if (full.count == 0) return;
 
     auto is_removed = [&](int y) {
-        for (int r : rows) if (r == y) return true;
+        for (int i = 0; i < full.count; i++) {
+            if (full.rows[i] == y) return true;
+        }
         return false;
     };
 
+    // 컬럼 압축용 스택 버퍼 — 동적 할당 없음.
+    std::array<Cell, height> survivors{};
+
     for (int x = left_wall + 1; x < right_wall; x++) {
-        std::vector<Cell> survivors;
+        int sz = 0;
         for (int y = floor - 1; y >= 0; y--) {
-            if (!is_removed(y)) survivors.push_back(grid[y][x]);
+            if (!is_removed(y)) survivors[sz++] = grid[y][x];
         }
         int y = floor - 1;
-        for (Cell c : survivors) { grid[y][x] = c; y--; }
+        for (int i = 0; i < sz; i++) { grid[y][x] = survivors[i]; y--; }
         while (y >= 0) { grid[y][x] = Cell::Empty; y--; }
     }
+    ++version_;
 }
 
 void Board::set_cell(int x, int y, Cell value)
 {
     if (is_inside(x, y)) {
         grid[y][x] = value;
+        ++version_;
     }
 }
 
@@ -127,17 +138,4 @@ bool Board::is_full_line(int y) const
         if (grid[y][x] == Cell::Empty) return false;
     }
     return true;
-}
-
-void Board::clear_line(int y)
-{
-    // 한 줄을 지우고 위 줄들을 1칸씩 끌어내림. remove_lines 도입 후로는 거의 미사용.
-    for (int row = y; row > 0; row--) {
-        for (int x = left_wall + 1; x < right_wall; x++) {
-            grid[row][x] = grid[row - 1][x];
-        }
-    }
-    for (int x = left_wall + 1; x < right_wall; x++) {
-        grid[0][x] = Cell::Empty;
-    }
 }

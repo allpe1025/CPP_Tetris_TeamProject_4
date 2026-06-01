@@ -132,10 +132,10 @@ void SkillGame::use_skill_w()
 {
     has_w = false;
 
-    // Board.cpp에 구현된 remove_lines 활용
-    std::vector<int> remove_rows;
-    if (Board::floor - 1 >= 0) remove_rows.push_back(Board::floor - 1); // 맨 아래 행
-    if (Board::floor - 2 >= 0) remove_rows.push_back(Board::floor - 2); // 맨 아래 한 칸 위의 행
+    // Board::FullLines 는 std::array 기반 (heap 할당 없음, 최대 4 라인)
+    Board::FullLines remove_rows{};
+    if (Board::floor - 1 >= 0) remove_rows.rows[remove_rows.count++] = Board::floor - 1; // 맨 아래 행
+    if (Board::floor - 2 >= 0) remove_rows.rows[remove_rows.count++] = Board::floor - 2; // 맨 아래 한 칸 위의 행
 
     get_board().remove_lines(remove_rows);
 
