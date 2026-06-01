@@ -37,7 +37,12 @@ bool Board::check_collision(const Block& block) const
             int y = block_y + row;
 
             if (x < 0 || x >= width || y >= height) return true;    // 좌·우·아래 바깥
-            if (y < 0) continue;                                    // 보드 위쪽 바깥은 자유
+            if (y < 0) {
+                // 좌·우 벽을 블록 스폰 위치(-4)보다 3블럭 위까지(y >= -7) 연장 →
+                // 스폰 직후 블록이 양옆으로 빠져나가 즉시 게임오버 되는 문제 방지.
+                if (y >= -7 && (x == left_wall || x == right_wall)) return true;
+                continue;                                           // 그 외 보드 위쪽 바깥은 자유
+            }
 
             if (grid[y][x] != Cell::Empty) return true;     // 벽 또는 굳은 블록과 충돌
         }
