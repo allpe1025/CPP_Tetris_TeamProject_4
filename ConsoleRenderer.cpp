@@ -85,6 +85,9 @@ void ConsoleRenderer::erase_block(const Block& block, int x, int y)
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
             if (shape_data[i][j] != 1) continue;
+            if (i + y < 0) continue;        // 보드 위쪽 바깥은 지우지 않음.
+            // (가드 없으면 SetConsoleCursorPosition 이 음수 y 에 silent fail 하고
+            //  이어지는 cout 이 이전 커서 위치에 쏟아져 벽/Fixed 셀이 사라지는 버그 발생)
             gotoxy((j + x) * 2 + ab_x, (i + y) + ab_y);
             cout << "  ";
         }

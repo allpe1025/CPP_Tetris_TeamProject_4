@@ -57,6 +57,11 @@ namespace {
 
 int main()
 {
+    // 콘솔 코드페이지를 UTF-8 (65001) 로 설정 → 소스의 UTF-8 한글/유니코드 글자(■, ▨, ◆ 등)가
+    // CP949 환경에서도 깨지지 않고 출력됨. (수동 chcp 65001 입력 불필요)
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+
     // 주의: std::ios::sync_with_stdio(false) 적용 금지.
     // Windows 콘솔의 C stdout 은 _IONBF (unbuffered) 인데, sync=false 로 바꾸면 cout 이
     // 자체 8KB stdio_filebuf 로 전환되어 buffered 가 됨. SetConsoleCursorPosition 은
