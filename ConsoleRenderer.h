@@ -4,7 +4,7 @@
 
 class Board;
 class Block;
-
+enum class GameMode;
 // IRenderer 의 Windows 콘솔 구현.
 // 모든 그리기는 (x, y) 절대 좌표에 gotoxy + std::cout 으로 수행된다.
 class ConsoleRenderer : public IRenderer
@@ -14,6 +14,7 @@ private:
     int ab_y = 1;
 
     void gotoxy(int x, int y);
+    void hide_cursor();
 
 public:
     void draw_board(const Board& board, int level, GameMode mode) override;            // 보드 외곽 + 고정 블록
