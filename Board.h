@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <vector>
 
@@ -36,11 +36,12 @@ public:
     //   2) remove_lines(rows) — 해당 줄들을 지우고 위 줄을 끌어내림 (컬럼 단위 압축)
     std::vector<int> find_full_lines() const;
     void remove_lines(const std::vector<int>& rows);
-
+    
+    void set_cell(int x, int y, Cell value);            // 특정 위치의 블록 한 개만 변경하기 위한 함수
     Cell get_cell(int x, int y) const;                  // 렌더러가 보드 상태를 읽을 때 사용
 
-private:
     bool is_inside(int x, int y) const;
+private:
     bool is_full_line(int y) const;
     void clear_line(int y);                             // 단일 줄 제거 + 위 줄 끌어내림 (legacy)
 };

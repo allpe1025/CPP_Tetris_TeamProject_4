@@ -1,6 +1,7 @@
 ﻿#include "ConsoleRenderer.h"
 #include "Board.h"
 #include "Block.h"
+#include "Game.h"
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
@@ -21,7 +22,7 @@ void ConsoleRenderer::hide_cursor()
     SetConsoleCursorInfo(hConsole, &info);
 }
 
-void ConsoleRenderer::draw_board(const Board& board, int level)
+void ConsoleRenderer::draw_board(const Board& board, int level, GameMode mode)
 {
     hide_cursor();
     Color wall_color = static_cast<Color>((level % 6) + 1);     // 벽 색: 레벨마다 6색을 순환
@@ -35,8 +36,13 @@ void ConsoleRenderer::draw_board(const Board& board, int level)
                 cout << "▨";
             }
             else if (cell_type == Cell::Fixed) {
-                ColorUtility::apply(Color::GRAY);
-                cout << "■";
+                ColorUtility::apply(Color::GRAY);  
+                if (mode == GameMode::HiddenStack) {
+                    cout << "  ";       // 투명 모드일 때는 쌓인 블록을 공백으로!
+                }      
+                else {
+                    cout << "■";                                    
+                }
             }
             else {
                 cout << "  ";                                   // Empty: 보드 내부 공백
@@ -95,7 +101,7 @@ void ConsoleRenderer::draw_next_block(const Block& next, int level)
         for (int j = 0; j < 4; j++) {
             if (shape_data[i][j] != 1) continue;
             gotoxy((j + 17) * 2 + ab_x, (i + 2) + ab_y);
-            cout << "■";
+            cout << next.get_display_text();        // 수정(전세하) : 다음 블록도 get_display_text()로 출력
         }
     }
     gotoxy(0, Board::height + ab_y + 2);
@@ -136,6 +142,24 @@ void ConsoleRenderer::animate_line_clear(int row)
     gotoxy(0, Board::height + ab_y + 2);
 }
 
+// 디버깅용
+void ConsoleRenderer::draw_skill_status(bool q, bool w, bool e, int q_cnt, int w_cnt, int w_tgt)
+{
+    int debug_x = 32 + ab_x;
+    int debug_y = 15 + ab_y;
+
+    gotoxy(debug_x, debug_y);
+
+    gotoxy(debug_x, debug_y + 1);
+    std::cout << "Q : " << (q ? "O" : "X") << " (" << q_cnt << "/36)  ";
+
+    gotoxy(debug_x, debug_y + 2);
+    std::cout << "W (Type " << w_tgt << ") : " << (w ? "O" : "X") << " (" << w_cnt << "/5)   ";
+
+    gotoxy(debug_x, debug_y + 3);
+    std::cout << "E : " << (e ? "O" : "X");    
+}
+
 void ConsoleRenderer::draw_game_over()
 {
     ColorUtility::apply(Color::RED);
@@ -153,13 +177,13 @@ void ConsoleRenderer::draw_logo()
     int logo_x = 13 + ab_x;
     int logo_y = 3  + ab_y;
     const char* frames[] = {
-        "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓",
-        "┃◆◆◆  ◆◆◆  ◆◆◆   ◆◆◆    ◆   ◆◆◆  ┃",
-        "┃  ◆    ◆        ◆     ◆ ◆    ◆   ◆      ┃",
-        "┃  ◆    ◆◆◆    ◆     ◆◆     ◆     ◆    ┃",
-        "┃  ◆    ◆        ◆     ◆ ◆    ◆       ◆  ┃",
-        "┃  ◆    ◆◆◆    ◆     ◆  ◆   ◆   ◆◆◆  ┃",
-        "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
+        "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓",
+        "┃  ◆ ◆ ◆   ◆ ◆ ◆   ◆ ◆ ◆   ◆ ◆ ◆    ◆   ◆ ◆ ◆   ┃",
+        "┃    ◆     ◆         ◆     ◆   ◆    ◆   ◆       ┃",
+        "┃    ◆     ◆ ◆ ◆     ◆     ◆ ◆      ◆     ◆     ┃",
+        "┃    ◆     ◆         ◆     ◆  ◆     ◆       ◆   ┃",
+        "┃    ◆     ◆ ◆ ◆     ◆     ◆    ◆   ◆   ◆ ◆ ◆   ┃",
+        "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
     };
     for (const char* line : frames) {           // 한 줄씩 타이핑 효과
         gotoxy(logo_x, logo_y++);

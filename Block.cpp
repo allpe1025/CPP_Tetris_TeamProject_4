@@ -1,4 +1,4 @@
-#include "Block.h"
+﻿#include "Block.h"
 #include <cstdlib>
 
 Block::Block(int stick_rate)

@@ -1,4 +1,4 @@
-﻿#include "InputManager.h"
+#include "InputManager.h"
 
 char InputManager::get_input()
 {
@@ -8,14 +8,18 @@ char InputManager::get_input()
     if (key == 0xE0) {                          // 방향키 prefix — 두 번째 _getch 가 실제 키
         key = _getch();
         switch (key) {
-        case 0x4b: return 'l';                  // ← 왼쪽
-        case 0x4d: return 'r';                  // → 오른쪽
+        case 0x4b: return 'l';                  // ← 왼쪽 방향키 입력시 왼쪽 이동
+        case 0x4d: return 'r';                  // → 오른쪽 방향키 입력시 오른쪽 이동
         case 0x48: return 'u';                  // ↑ 위 (회전)
         case 0x50: return 'd';                  // ↓ 아래 (소프트 드롭)
         }
         return 0;
     }
-    if (key == 'h' || key == 'H') return 'h';     // Hold
+    if (key == 'h' || key == 'H') return 'h';   // Hold
     if (key == 32) return 's';                  // 스페이스 (하드 드롭)
+    if (key == 'q' || key == 'Q') return 'q';   // 스킬 Q
+    if (key == 'w' || key == 'W') return 'w';   // 스킬 W
+    if (key == 'e' || key == 'E') return 'e';   // 스킬 E
+    if (key == 't' || key == 'T') return 't';   // 스킬 디버그 (모든 스킬 활성)
     return 0;
 }
