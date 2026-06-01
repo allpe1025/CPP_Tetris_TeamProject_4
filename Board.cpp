@@ -1,4 +1,4 @@
-#include "Board.h"
+﻿#include "Board.h"
 #include "Block.h"
 
 Board::Board()
@@ -94,6 +94,13 @@ void Board::remove_lines(const std::vector<int>& rows)
         int y = floor - 1;
         for (Cell c : survivors) { grid[y][x] = c; y--; }
         while (y >= 0) { grid[y][x] = Cell::Empty; y--; }
+    }
+}
+
+void Board::set_cell(int x, int y, Cell value)
+{
+    if (is_inside(x, y)) {
+        grid[y][x] = value;
     }
 }
 

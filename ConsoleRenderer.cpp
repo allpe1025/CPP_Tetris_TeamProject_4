@@ -101,7 +101,7 @@ void ConsoleRenderer::draw_next_block(const Block& next, int level)
         for (int j = 0; j < 4; j++) {
             if (shape_data[i][j] != 1) continue;
             gotoxy((j + 17) * 2 + ab_x, (i + 2) + ab_y);
-            cout << "■";
+            cout << next.get_display_text();        // 수정(전세하) : 다음 블록도 get_display_text()로 출력
         }
     }
     gotoxy(0, Board::height + ab_y + 2);
@@ -140,6 +140,24 @@ void ConsoleRenderer::animate_line_clear(int row)
         Sleep(10);
     }
     gotoxy(0, Board::height + ab_y + 2);
+}
+
+// 디버깅용
+void ConsoleRenderer::draw_skill_status(bool q, bool w, bool e, int q_cnt, int w_cnt, int w_tgt)
+{
+    int debug_x = 32 + ab_x;
+    int debug_y = 15 + ab_y;
+
+    gotoxy(debug_x, debug_y);
+
+    gotoxy(debug_x, debug_y + 1);
+    std::cout << "Q : " << (q ? "O" : "X") << " (" << q_cnt << "/36)  ";
+
+    gotoxy(debug_x, debug_y + 2);
+    std::cout << "W (Type " << w_tgt << ") : " << (w ? "O" : "X") << " (" << w_cnt << "/5)   ";
+
+    gotoxy(debug_x, debug_y + 3);
+    std::cout << "E : " << (e ? "O" : "X");    
 }
 
 void ConsoleRenderer::draw_game_over()

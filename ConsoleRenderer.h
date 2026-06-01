@@ -24,11 +24,12 @@ public:
     void draw_stats(int level, int score, int lines_left) override;     // STAGE / SCORE / LINES 박스
     void animate_line_clear(int row) override;                          // 가득 찬 줄 □ 깜빡임 효과
     void draw_hold_block(const Block* hold, int level) override;        // 홀드 블록 (박스 + 블록)
-	void draw_ghost_block(const Block& ghost, int x, int y) override;   // 고스트 블록 (현재 위치 보여주는 블록)
+    void draw_ghost_block(const Block& ghost, int x, int y) override;   // 고스트 블록 (현재 위치 보여주는 블록)
+    void draw_skill_status(bool q, bool w, bool e, int q_cnt, int w_cnt, int w_tgt) override;   // 스킬 보유 여부 출력
 
     void draw_game_over() override;     // GAME OVER 박스
     void draw_logo() override;          // 타이틀 (타이핑 효과)
     void draw_logo_demo() override;     // 로고 아래 데모 블록 한 프레임
     void clear() override;              // 콘솔 전체 정리
-    
+
 };

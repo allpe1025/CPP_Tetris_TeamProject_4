@@ -21,7 +21,9 @@ void Game::run()
     renderer.draw_logo();
     wait_for_logo_key();                    // 데모 블록 깜빡이며 키 대기 (원본 흐름)
 
-    mode = static_cast<GameMode>(ask_game_mode());  // 1~5 선택 (모드가 레벨 선택보다 먼저)
+    if (!mode_preset) {                                     // main에서 set_mode로 미리 정해진 경우는 건너뜀
+        mode = static_cast<GameMode>(ask_game_mode());
+    }
     int start_level = ask_start_level();            // 1~8 선택
 
     // 원본은 게임오버 후 init() 호출하며 무한 반복. 동일 흐름.
@@ -122,19 +124,21 @@ void Game::wait_for_logo_key()
     _getch();
 }
 
-void Game::handle_input()
+void Game::handle_input(char c)
 {
- 
-    bool inv = (mode == GameMode::Inverted);    //Inverted 모드에서 좌우/회전 키 반전
+    if (c == 0) {
+        c = input.get_input();              // 파생 클래스가 입력을 미리 읽지 않은 경우 직접 폴링
+    }
+    bool inv = (mode == GameMode::Inverted);    // Inverted 모드에서 좌우/회전 키 반전
 
-    switch (input.get_input()) {
+    switch (c) {
     case 'l': try_move(inv ?  1 : -1, 0); break;       // 좌
     case 'r': try_move(inv ? -1 :  1, 0); break;       // 우
     case 'd':                               // 소프트 드롭: 못 내려가면 즉시 착지
         if (!try_move(0, 1)) on_block_landed();
         break;
-    case 'u': 
-        if(inv){
+    case 'u':
+        if (inv) {
             current->back_rotate();
             if (board.check_collision(*current)) {
                 current->rotate();
@@ -143,12 +147,12 @@ void Game::handle_input()
                 dirty_block = true;
             }
         }
-        else{
-            try_rotate();    
+        else {
+            try_rotate();
         }
         break;       // 회전
     case 's': hard_drop();     break;       // 하드 드롭
-	case 'h': hold_block();    break;       // 홀드
+    case 'h': hold_block();    break;       // 홀드
     default:                   break;       // 입력 없음 (0) 또는 미정의 키
     }
 }
@@ -215,7 +219,11 @@ void Game::on_block_landed()
         return;
     }
     renderer.draw_block(*current, current->get_x(), current->get_y());
-    Sleep(100);                           //+ 착지한 블록 0.1초 출력
+    Sleep(100);                           // 착지한 블록 0.1초 출력
+
+    // 특수 블록 능력 발동 (특수 블록이 아니면 아무일도 안함)
+    current->execute_effect(board);
+
     board.merge_block(*current);
 
     // 1) 가득 찬 줄 탐지 (보드는 아직 변경 X)

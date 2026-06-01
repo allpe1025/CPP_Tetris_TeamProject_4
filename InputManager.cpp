@@ -1,4 +1,4 @@
-﻿#include "InputManager.h"
+#include "InputManager.h"
 
 char InputManager::get_input()
 {
@@ -15,7 +15,11 @@ char InputManager::get_input()
         }
         return 0;
     }
-    if (key == 'h' || key == 'H') return 'h';     // Hold
+    if (key == 'h' || key == 'H') return 'h';   // Hold
     if (key == 32) return 's';                  // 스페이스 (하드 드롭)
-    return 0; 
+    if (key == 'q' || key == 'Q') return 'q';   // 스킬 Q
+    if (key == 'w' || key == 'W') return 'w';   // 스킬 W
+    if (key == 'e' || key == 'E') return 'e';   // 스킬 E
+    if (key == 't' || key == 'T') return 't';   // 스킬 디버그 (모든 스킬 활성)
+    return 0;
 }
