@@ -8,18 +8,31 @@
 
 using namespace std;
 
+ConsoleRenderer::ConsoleRenderer()
+    : hConsole_(GetStdHandle(STD_OUTPUT_HANDLE))
+{
+}
+
 void ConsoleRenderer::gotoxy(int x, int y)
 {
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    // GetStdHandle 은 생성자에서 1회만 호출 → 매 호출 syscall 회피.
     COORD pos = { (short)x, (short)y };
-    SetConsoleCursorPosition(hConsole, pos);
+    SetConsoleCursorPosition(hConsole_, pos);
 }
 
 void ConsoleRenderer::hide_cursor()
 {
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_CURSOR_INFO info = { 1, FALSE };
-    SetConsoleCursorInfo(hConsole, &info);
+    SetConsoleCursorInfo(hConsole_, &info);
+}
+
+void ConsoleRenderer::apply_color(Color c)
+{
+    // 직전 적용 색과 같으면 SetConsoleTextAttribute 스킵.
+    if (color_cache_valid_ && c == current_color_) return;
+    ColorUtility::apply(c);
+    current_color_ = c;
+    color_cache_valid_ = true;
 }
 
 void ConsoleRenderer::draw_board(const Board& board, int level, GameMode mode)
@@ -32,16 +45,16 @@ void ConsoleRenderer::draw_board(const Board& board, int level, GameMode mode)
             Cell cell_type = board.get_cell(x, y);
             gotoxy(x * 2 + ab_x, y + ab_y);
             if (cell_type == Cell::Wall) {
-                ColorUtility::apply(wall_color);
+                apply_color(wall_color);
                 cout << "▨";
             }
             else if (cell_type == Cell::Fixed) {
-                ColorUtility::apply(Color::GRAY);  
+                apply_color(Color::GRAY);
                 if (mode == GameMode::HiddenStack) {
                     cout << "  ";       // 투명 모드일 때는 쌓인 블록을 공백으로!
-                }      
+                }
                 else {
-                    cout << "■";                                    
+                    cout << "■";
                 }
             }
             else {
@@ -49,12 +62,11 @@ void ConsoleRenderer::draw_board(const Board& board, int level, GameMode mode)
             }
         }
     }
-    gotoxy(0, Board::height + ab_y + 2);
 }
 
 void ConsoleRenderer::draw_block(const Block& block, int x, int y)
 {
-    ColorUtility::apply(static_cast<Color>(block.get_color()));
+    apply_color(static_cast<Color>(block.get_color()));
     auto shape_data = block.get_shape();
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
@@ -64,7 +76,6 @@ void ConsoleRenderer::draw_block(const Block& block, int x, int y)
             cout << block.get_display_text();
         }
     }
-    gotoxy(0, Board::height + ab_y + 2);
 }
 
 void ConsoleRenderer::erase_block(const Block& block, int x, int y)
@@ -78,39 +89,56 @@ void ConsoleRenderer::erase_block(const Block& block, int x, int y)
             cout << "  ";
         }
     }
-    gotoxy(0, Board::height + ab_y + 2);
+}
+
+void ConsoleRenderer::draw_next_box(int level)
+{
+    // 다음 블록 박스 외곽 (6×6의 outline 20셀)만 그림. 박스 색은 "다음 스테이지의 벽 색" (원본 동작 이식).
+    Color box_color = static_cast<Color>((level + 1) % 6 + 1);
+    apply_color(box_color);
+    for (int i = 1; i < 7; i++) {
+        for (int j = 0; j < 6; j++) {
+            if (i == 1 || i == 6 || j == 0 || j == 5) {
+                gotoxy((j + 16) * 2 + ab_x, i + ab_y);
+                cout << "■";
+            }
+        }
+    }
 }
 
 void ConsoleRenderer::draw_next_block(const Block& next, int level)
 {
-    // 1) 박스 외곽 — 색은 "다음 스테이지의 벽 색" (원본 동작 이식)
-    Color box_color = static_cast<Color>((level + 1) % 6 + 1);
-    ColorUtility::apply(box_color);
-    for (int i = 1; i < 7; i++) {
-        for (int j = 0; j < 6; j++) {
-            gotoxy((j + 16) * 2 + ab_x, i + ab_y);
-            if (i == 1 || i == 6 || j == 0 || j == 5) cout << "■";
-            else                                      cout << "  ";
+    // 박스 외곽은 레벨 변경 시 + 첫 호출 시에만 그림 → 매 호출마다 36셀 redraw 회피.
+    if (!next_box_drawn_ || last_next_box_level_ != level) {
+        draw_next_box(level);
+        next_box_drawn_ = true;
+        last_next_box_level_ = level;
+    }
+
+    // 박스 안 4×4 영역 클리어 (이전 블록 흔적 제거)
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            gotoxy((j + 17) * 2 + ab_x, (i + 2) + ab_y);
+            cout << "  ";
         }
     }
 
-    // 2) 박스 안에 블록 (각도는 회전 전 0 기준 그대로)
-    ColorUtility::apply(static_cast<Color>(next.get_color()));
+    // 새 블록 그리기 (회전 전 0 기준 각도)
+    apply_color(static_cast<Color>(next.get_color()));
     auto shape_data = next.get_shape();
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
             if (shape_data[i][j] != 1) continue;
             gotoxy((j + 17) * 2 + ab_x, (i + 2) + ab_y);
-            cout << next.get_display_text();        // 수정(전세하) : 다음 블록도 get_display_text()로 출력
+            cout << next.get_display_text();
         }
     }
-    gotoxy(0, Board::height + ab_y + 2);
 }
 
 void ConsoleRenderer::draw_stats(int level, int score, int lines_left)
 {
     // 원본 show_gamestat 의 레이아웃 이식: 라벨과 값을 별도 줄에 배치 (박스 없음)
-    ColorUtility::apply(Color::GRAY);
+    apply_color(Color::GRAY);
 
     gotoxy(35 + ab_x, 7  + ab_y); cout << "STAGE";
     gotoxy(41 + ab_x, 7  + ab_y); cout << level;
@@ -121,14 +149,13 @@ void ConsoleRenderer::draw_stats(int level, int score, int lines_left)
     gotoxy(35 + ab_x, 12 + ab_y); cout << "LINES";
     gotoxy(35 + ab_x, 13 + ab_y); cout << setw(10) << lines_left;
 
-    ColorUtility::apply(Color::WHITE);
-    gotoxy(0, Board::height + ab_y + 2);
+    apply_color(Color::WHITE);
 }
 
 void ConsoleRenderer::animate_line_clear(int row)
 {
     // 원본 check_full_line 의 시각효과: 파란 □ 로 한 칸씩 채웠다가 → 다시 비움
-    ColorUtility::apply(Color::BLUE);
+    apply_color(Color::BLUE);
     for (int j = Board::left_wall + 1; j < Board::right_wall; j++) {
         gotoxy(j * 2 + ab_x, row + ab_y);
         cout << "□";
@@ -139,7 +166,6 @@ void ConsoleRenderer::animate_line_clear(int row)
         cout << "  ";
         Sleep(10);
     }
-    gotoxy(0, Board::height + ab_y + 2);
 }
 
 // 디버깅용
@@ -148,8 +174,6 @@ void ConsoleRenderer::draw_skill_status(bool q, bool w, bool e, int q_cnt, int w
     int debug_x = 32 + ab_x;
     int debug_y = 15 + ab_y;
 
-    gotoxy(debug_x, debug_y);
-
     gotoxy(debug_x, debug_y + 1);
     std::cout << "Q : " << (q ? "O" : "X") << " (" << q_cnt << "/36)  ";
 
@@ -157,23 +181,21 @@ void ConsoleRenderer::draw_skill_status(bool q, bool w, bool e, int q_cnt, int w
     std::cout << "W (Type " << w_tgt << ") : " << (w ? "O" : "X") << " (" << w_cnt << "/5)   ";
 
     gotoxy(debug_x, debug_y + 3);
-    std::cout << "E : " << (e ? "O" : "X");    
+    std::cout << "E : " << (e ? "O" : "X");
 }
 
 void ConsoleRenderer::draw_game_over()
 {
-    ColorUtility::apply(Color::RED);
+    apply_color(Color::RED);
     gotoxy(15 + ab_x, 8  + ab_y); cout << "┏━━━━━━━━━━━━━┓";
     gotoxy(15 + ab_x, 9  + ab_y); cout << "┃  GAME OVER  ┃";
     gotoxy(15 + ab_x, 10 + ab_y); cout << "┗━━━━━━━━━━━━━┛";
-    gotoxy(0, Board::height + ab_y + 2);
 }
 
 void ConsoleRenderer::draw_logo()
 {
-    
     // 원본 show_logo 의 6줄 TETRIS 글자 + "Please Press Any Key" 메시지 이식.
-    ColorUtility::apply(Color::YELLOW);
+    apply_color(Color::YELLOW);
     int logo_x = 13 + ab_x;
     int logo_y = 3  + ab_y;
     const char* frames[] = {
@@ -193,7 +215,7 @@ void ConsoleRenderer::draw_logo()
 
     gotoxy(28 + ab_x, 20 + ab_y);
     cout << "Please Press Any Key~!";
-    ColorUtility::apply(Color::WHITE);
+    apply_color(Color::WHITE);
 }
 
 void ConsoleRenderer::draw_logo_demo()
@@ -213,69 +235,88 @@ void ConsoleRenderer::draw_logo_demo()
         Block demo(rand() % 7, rand() % 4, x, 14);
         draw_block(demo, demo.get_x(), demo.get_y());
     }
-    gotoxy(0, Board::height + ab_y + 2);
 }
 
 void ConsoleRenderer::clear()
 {
     system("cls");
-} 
+    // cls 후 Windows 콘솔 상태가 리셋되므로 우리 캐시도 무효화.
+    color_cache_valid_ = false;
+    next_box_drawn_ = false;
+    hold_box_drawn_ = false;
+    last_next_box_level_ = -1;
+    last_hold_box_level_ = -1;
+    hide_cursor();      // cls 가 커서를 다시 보이게 할 수 있어 안전상 다시 숨김
+}
 
-void ConsoleRenderer::draw_hold_block(const Block* hold, int level)
+void ConsoleRenderer::draw_hold_box(int level)
 {
+    // 홀드 박스 외곽 (6×6 outline) 만 그림.
     const int box_x = -7;
     const int box_y = 1;
     const int box_width = 6;
     const int box_height = 6;
 
     // 제목 출력
-    ColorUtility::apply(Color::GRAY);
+    apply_color(Color::GRAY);
     gotoxy(box_x * 2 + ab_x, (box_y - 1) + ab_y);
     cout << "HOLD";
 
-    // 박스 전체 그림
+    // 박스 외곽만 그림 (안쪽 공백은 draw_hold_block 에서 매번 클리어)
     Color box_color = static_cast<Color>((level % 6) + 1);
-    ColorUtility::apply(box_color);
-
+    apply_color(box_color);
     for (int i = 0; i < box_height; i++) {
         for (int j = 0; j < box_width; j++) {
-            gotoxy((j + box_x) * 2 + ab_x, (i + box_y) + ab_y);
-
             if (i == 0 || i == box_height - 1 || j == 0 || j == box_width - 1) {
+                gotoxy((j + box_x) * 2 + ab_x, (i + box_y) + ab_y);
                 cout << "■";
             }
-            else {
-                cout << "  ";
-            }
+        }
+    }
+}
+
+void ConsoleRenderer::draw_hold_block(const Block* hold, int level)
+{
+    const int box_x = -7;
+    const int box_y = 1;
+    const int inner_x = box_x + 1;          // 안쪽 4×4 시작 좌표
+    const int inner_y = box_y + 1;
+
+    // 박스 외곽은 레벨 변경 시 + 첫 호출 시에만 그림.
+    if (!hold_box_drawn_ || last_hold_box_level_ != level) {
+        draw_hold_box(level);
+        hold_box_drawn_ = true;
+        last_hold_box_level_ = level;
+    }
+
+    // 안쪽 4×4 클리어 (이전 hold 블록 흔적 제거)
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            gotoxy((j + inner_x) * 2 + ab_x, (i + inner_y) + ab_y);
+            cout << "  ";
         }
     }
 
     if (hold == nullptr) {
-        ColorUtility::apply(Color::WHITE);
-        gotoxy(0, Board::height + ab_y + 2);
+        apply_color(Color::WHITE);
         return;
     }
 
-    ColorUtility::apply(static_cast<Color>(hold->get_color()));
-
+    apply_color(static_cast<Color>(hold->get_color()));
     auto shape_data = hold->get_shape();
-
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
             if (shape_data[i][j] != 1) continue;
-
-            gotoxy((j + box_x + 1) * 2 + ab_x, (i + box_y + 1) + ab_y);
+            gotoxy((j + inner_x) * 2 + ab_x, (i + inner_y) + ab_y);
             cout << hold->get_display_text();
         }
     }
-
-    ColorUtility::apply(Color::WHITE);
-    gotoxy(0, Board::height + ab_y + 2);
+    apply_color(Color::WHITE);
 }
 
 void ConsoleRenderer::draw_ghost_block(const Block& ghost, int x, int y)
 {
-    ColorUtility::apply(Color::GRAY);
+    apply_color(Color::GRAY);
     auto shape_data = ghost.get_shape();
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
@@ -285,5 +326,4 @@ void ConsoleRenderer::draw_ghost_block(const Block& ghost, int x, int y)
             cout << "□";
         }
     }
-    gotoxy(0, Board::height + ab_y + 2);
 }

@@ -57,6 +57,11 @@ namespace {
 
 int main()
 {
+    // C stdio 와의 동기화 lock 비활성화 → cout 출력 시 sync 비용 제거.
+    // (단, cin.tie() 는 기본(=&cout) 유지 — 프롬프트가 입력 직전에 자동 flush 되어야 하므로.)
+    std::ios::sync_with_stdio(false);
+    std::cout.tie(nullptr);
+
     std::srand(static_cast<unsigned>(std::time(nullptr)));      // 블록 셔플용 난수 시드
 
     ConsoleRenderer renderer;
