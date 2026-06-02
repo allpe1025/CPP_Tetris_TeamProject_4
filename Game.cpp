@@ -1,4 +1,4 @@
-ï»¿#include "Game.h"
+#include "Game.h"
 #include <Windows.h>
 #include <conio.h>
 #include <cstdlib>
@@ -6,8 +6,8 @@
 #include "Color.h"
 
 namespace {
-    // í•œ í”„ë ˆì„ ê¸¸ì´(ms). StageConfig::speed ëŠ” ì´ ë‹¨ìœ„ì˜ ë°°ìˆ˜ê°€ ëœë‹¤.
-    // ì˜ˆ) speed=40 â†’ 40 * 15 = 600ms ë§ˆë‹¤ 1ì¹¸ ìë™ ë‚™í•˜. ì›ë³¸ Sleep(15)ì™€ ë™ì¼.
+    // ÇÑ ÇÁ·¹ÀÓ ±æÀÌ(ms). StageConfig::speed ´Â ÀÌ ´ÜÀ§ÀÇ ¹è¼ö°¡ µÈ´Ù.
+    // ¿¹) speed=40 ¡æ 40 * 15 = 600ms ¸¶´Ù 1Ä­ ÀÚµ¿ ³«ÇÏ. ¿øº» Sleep(15)¿Í µ¿ÀÏ.
     constexpr int FRAME_MS = 15;
 }
 
@@ -20,18 +20,18 @@ void Game::run()
 {
     return_to_mode_select = false;
 
-    // main ì—ì„œ set_mode ë¡œ ëª¨ë“œë¥¼ ë¯¸ë¦¬ ì •í•´ì¤€ ê²½ìš°, main ì´ ì´ë¯¸ ë¡œê³ ë¥¼ ë³´ì—¬ì¤¬ë‹¤ê³  ê°€ì •í•˜ê³  ìƒëµ.
-    // (main ì´ ë¡œê³  -> ëª¨ë“œ ì„ íƒ -> ì„œë¸Œí´ë˜ìŠ¤ ì¸ìŠ¤í„´ìŠ¤í™” ìˆœì„œë¡œ íë¦„ì„ ì£¼ë„í•˜ê¸° ë•Œë¬¸)
+    // main ¿¡¼­ set_mode ·Î ¸ğµå¸¦ ¹Ì¸® Á¤ÇØÁØ °æ¿ì, main ÀÌ ÀÌ¹Ì ·Î°í¸¦ º¸¿©Áá´Ù°í °¡Á¤ÇÏ°í »ı·«.
+    // (main ÀÌ ·Î°í -> ¸ğµå ¼±ÅÃ -> ¼­ºêÅ¬·¡½º ÀÎ½ºÅÏ½ºÈ­ ¼ø¼­·Î Èå¸§À» ÁÖµµÇÏ±â ¶§¹®)
     if (!mode_preset) {
         renderer.clear();
         renderer.draw_logo();
-        wait_for_logo_key();                // ë°ëª¨ ë¸”ë¡ ê¹œë¹¡ì´ë©° í‚¤ ëŒ€ê¸° (ì›ë³¸ íë¦„)
+        wait_for_logo_key();                // µ¥¸ğ ºí·Ï ±ôºıÀÌ¸ç Å° ´ë±â (¿øº» Èå¸§)
         mode = static_cast<GameMode>(ask_game_mode());
     }
-    int start_level = ask_start_level();            // 1~8 ì„ íƒ
+    int start_level = ask_start_level();            // 1~8 ¼±ÅÃ
     if (return_to_mode_select) return;
 
-    // ì›ë³¸ì€ ê²Œì„ì˜¤ë²„ í›„ init() í˜¸ì¶œí•˜ë©° ë¬´í•œ ë°˜ë³µ. ë™ì¼ íë¦„.
+    // ¿øº»Àº °ÔÀÓ¿À¹ö ÈÄ init() È£ÃâÇÏ¸ç ¹«ÇÑ ¹İº¹. µ¿ÀÏ Èå¸§.
     while (true) {
         reset_state(start_level);
 
@@ -40,7 +40,7 @@ void Game::run()
             handle_input();
             if (return_to_mode_select) return;
             tick();
-            if (any_dirty()) render_frame();    // ë”í‹° í”Œë˜ê·¸ê°€ ì¼œì§„ ì˜ì—­ë§Œ ê°±ì‹ 
+            if (any_dirty()) render_frame();    // ´õÆ¼ ÇÃ·¡±×°¡ ÄÑÁø ¿µ¿ª¸¸ °»½Å
             Sleep(FRAME_MS);
         }
 
@@ -48,24 +48,24 @@ void Game::run()
         Sleep(1000);
         wait_any_key();
         if (return_to_mode_select) return;
-        // ê°™ì€ ì‹œì‘ ë ˆë²¨ë¡œ ë‹¤ì‹œ ì‹œì‘ (ì›ë³¸ë„ init í›„ input_data ë‹¤ì‹œ í˜¸ì¶œí•˜ì§€ë§Œ
-        // ì‚¬ìš©ì ì…ë ¥ íë¦„ì„ ë§¤ë²ˆ ëŠì§€ ì•Šê²Œ ì—¬ê¸°ì„  í•œ ë²ˆ ë°›ì€ ë ˆë²¨ì„ ì¬ì‚¬ìš©).
+        // °°Àº ½ÃÀÛ ·¹º§·Î ´Ù½Ã ½ÃÀÛ (¿øº»µµ init ÈÄ input_data ´Ù½Ã È£ÃâÇÏÁö¸¸
+        // »ç¿ëÀÚ ÀÔ·Â Èå¸§À» ¸Å¹ø ²÷Áö ¾Ê°Ô ¿©±â¼± ÇÑ ¹ø ¹ŞÀº ·¹º§À» Àç»ç¿ë).
     }
 }
 
 int Game::ask_game_mode()
 {
-    // ì½˜ì†” í…ìŠ¤íŠ¸ ì…ë ¥ìœ¼ë¡œ ëª¨ë“œ ì„ íƒ (ask_start_level ê³¼ ë™ì¼í•œ ìŠ¤íƒ€ì¼).
-    // 1~5 ì´ì™¸ ì…ë ¥ì€ ë‹¤ì‹œ ë°›ìŒ. í™”ë©´ì„ í•œ ë²ˆ ë¹„ìš´ ë’¤ ë¡œê³  ìœ„ì— ë©”ë‰´ë¥¼ ì¶œë ¥í•œë‹¤.
+    // ÄÜ¼Ö ÅØ½ºÆ® ÀÔ·ÂÀ¸·Î ¸ğµå ¼±ÅÃ (ask_start_level °ú µ¿ÀÏÇÑ ½ºÅ¸ÀÏ).
+    // 1~5 ÀÌ¿Ü ÀÔ·ÂÀº ´Ù½Ã ¹ŞÀ½. È­¸éÀ» ÇÑ ¹ø ºñ¿î µÚ ·Î°í À§¿¡ ¸Ş´º¸¦ Ãâ·ÂÇÑ´Ù.
     renderer.clear();
     ColorUtility::apply(Color::GRAY);
     std::cout << "==== Select Game Mode ====\n";
-    std::cout << "  1. Basic         (ê¸°ë³¸)\n";
-    std::cout << "  2. Inverted      (ì¢Œìš°/íšŒì „ í‚¤ ë°˜ì „)\n";
-    std::cout << "  3. Hidden Stack  (ìŒ“ì¸ ë¸”ë¡ ìˆ¨ê¹€)\n";
-    std::cout << "  4. Special Block (íŠ¹ìˆ˜ ë¸”ë¡ ë“±ì¥)\n";
-    std::cout << "  5. Quest         (í€˜ìŠ¤íŠ¸)\n";
-    std::cout << "\nESC: ëª¨ë“œ ì„ íƒì°½ìœ¼ë¡œ ëŒì•„ê°€ê¸°\n";
+    std::cout << "  1. Basic         (±âº»)\n";
+    std::cout << "  2. Inverted      (ÁÂ¿ì/È¸Àü Å° ¹İÀü)\n";
+    std::cout << "  3. Hidden Stack  (½×ÀÎ ºí·Ï ¼û±è)\n";
+    std::cout << "  4. Special Block (Æ¯¼ö ºí·Ï µîÀå)\n";
+    std::cout << "  5. Quest         (Äù½ºÆ®)\n";
+    std::cout << "\nESC: ¸ğµå ¼±ÅÃÃ¢À¸·Î µ¹¾Æ°¡±â\n";
 
     int m = 0;
     while (m < 1 || m > 5) {
@@ -87,7 +87,7 @@ int Game::ask_start_level()
     ColorUtility::apply(Color::GRAY);
     std::cout << "==== Select Start Level ====\n";
     std::cout << "Select Start level[1-8]\n";
-    std::cout << "ESC: ëª¨ë“œ ì„ íƒì°½ìœ¼ë¡œ ëŒì•„ê°€ê¸°\n\n";
+    std::cout << "ESC: ¸ğµå ¼±ÅÃÃ¢À¸·Î µ¹¾Æ°¡±â\n\n";
 
     while (true) {
         int key = _getch();
@@ -108,12 +108,12 @@ int Game::ask_start_level()
 void Game::reset_state(int start_level)
 {
     board.reset();
-    stage.set_level(start_level - 1);       // ì‚¬ìš©ì ì…ë ¥ì€ 1~8, ë‚´ë¶€ ì¸ë±ìŠ¤ëŠ” 0~7
+    stage.set_level(start_level - 1);       // »ç¿ëÀÚ ÀÔ·ÂÀº 1~8, ³»ºÎ ÀÎµ¦½º´Â 0~7
     stats = GameStats{};
     gravity_tick = 0;
     current.reset();
     next = std::make_unique<Block>(stage.current().stick_rate);
-    spawn_next_block();                     // ë‚´ë¶€ì—ì„œ last_drawn_* / ghost_cache ëª¨ë‘ reset ë¨
+    spawn_next_block();                     // ³»ºÎ¿¡¼­ last_drawn_* / ghost_cache ¸ğµÎ reset µÊ
     renderer.clear();
     hold.reset();
     can_hold = true;
@@ -130,8 +130,8 @@ void Game::wait_any_key()
 
 void Game::wait_for_logo_key()
 {
-    // ì›ë³¸ show_logo ì˜ ë°ëª¨ ë¸”ë¡ ë£¨í”„ ì´ì‹.
-    // 40 tick ë§ˆë‹¤ (â‰ˆ1.2ì´ˆ) ë¬´ì‘ìœ„ ë¸”ë¡ 4ê°œë¥¼ ìƒˆë¡œ ë¿Œë¦¬ë©´ì„œ í‚¤ê°€ ëˆŒë¦´ ë•Œê¹Œì§€ ëŒ€ê¸°.
+    // ¿øº» show_logo ÀÇ µ¥¸ğ ºí·Ï ·çÇÁ ÀÌ½Ä.
+    // 40 tick ¸¶´Ù (?1.2ÃÊ) ¹«ÀÛÀ§ ºí·Ï 4°³¸¦ »õ·Î »Ñ¸®¸é¼­ Å°°¡ ´­¸± ¶§±îÁö ´ë±â.
     int tick = 0;
     while (!_kbhit()) {
         if (tick % 40 == 0) {
@@ -146,18 +146,18 @@ void Game::wait_for_logo_key()
 void Game::handle_input(char c)
 {
     if (c == 0) {
-        c = input.get_input();              // íŒŒìƒ í´ë˜ìŠ¤ê°€ ì…ë ¥ì„ ë¯¸ë¦¬ ì½ì§€ ì•Šì€ ê²½ìš° ì§ì ‘ í´ë§
+        c = input.get_input();              // ÆÄ»ı Å¬·¡½º°¡ ÀÔ·ÂÀ» ¹Ì¸® ÀĞÁö ¾ÊÀº °æ¿ì Á÷Á¢ Æú¸µ
     }
-    bool inv = (mode == GameMode::Inverted);    // Inverted ëª¨ë“œì—ì„œ ì¢Œìš°/íšŒì „ í‚¤ ë°˜ì „
+    bool inv = (mode == GameMode::Inverted);    // Inverted ¸ğµå¿¡¼­ ÁÂ¿ì/È¸Àü Å° ¹İÀü
 
     switch (c) {
     case 'x':
         return_to_mode_select = true;
         running = false;
         break;
-    case 'l': try_move(inv ?  1 : -1, 0); break;       // ì¢Œ
-    case 'r': try_move(inv ? -1 :  1, 0); break;       // ìš°
-    case 'd':                               // ì†Œí”„íŠ¸ ë“œë¡­: ëª» ë‚´ë ¤ê°€ë©´ ì¦‰ì‹œ ì°©ì§€
+    case 'l': try_move(inv ?  1 : -1, 0); break;       // ÁÂ
+    case 'r': try_move(inv ? -1 :  1, 0); break;       // ¿ì
+    case 'd':                               // ¼ÒÇÁÆ® µå·Ó: ¸ø ³»·Á°¡¸é Áï½Ã ÂøÁö
         if (!try_move(0, 1)) on_block_landed();
         break;
     case 'u':
@@ -173,10 +173,10 @@ void Game::handle_input(char c)
         else {
             try_rotate();
         }
-        break;       // íšŒì „
-    case 's': hard_drop();     break;       // í•˜ë“œ ë“œë¡­
-    case 'h': hold_block();    break;       // í™€ë“œ
-    default:                   break;       // ì…ë ¥ ì—†ìŒ (0) ë˜ëŠ” ë¯¸ì •ì˜ í‚¤
+        break;       // È¸Àü
+    case 's': hard_drop();     break;       // ÇÏµå µå·Ó
+    case 'h': hold_block();    break;       // È¦µå
+    default:                   break;       // ÀÔ·Â ¾øÀ½ (0) ¶Ç´Â ¹ÌÁ¤ÀÇ Å°
     }
 }
 
@@ -197,13 +197,13 @@ bool Game::try_move(int dx, int dy)
 {
     if (!current) return false;
 
-    // 1) í›„ë³´ ìœ„ì¹˜ë¡œ ì´ë™
+    // 1) ÈÄº¸ À§Ä¡·Î ÀÌµ¿
     if      (dx == -1) current->move_left();
     else if (dx ==  1) current->move_right();
     if      (dy == -1) current->move_up();
     else if (dy ==  1) current->move_down();
 
-    // 2) ì¶©ëŒì´ë©´ ì›ìœ„ì¹˜ë¡œ ë¡¤ë°±
+    // 2) Ãæµ¹ÀÌ¸é ¿øÀ§Ä¡·Î ·Ñ¹é
     if (board.check_collision(*current)) {
         if      (dx == -1) current->move_right();
         else if (dx ==  1) current->move_left();
@@ -230,71 +230,71 @@ bool Game::try_rotate()
 
 void Game::hard_drop()
 {
-    while (try_move(0, 1)) { /* ë” ì´ìƒ ë‚´ë ¤ê°ˆ ìˆ˜ ì—†ì„ ë•Œê¹Œì§€ ë°˜ë³µ */ }
+    while (try_move(0, 1)) { /* ´õ ÀÌ»ó ³»·Á°¥ ¼ö ¾øÀ» ¶§±îÁö ¹İº¹ */ }
     on_block_landed();
 }
 
 void Game::on_block_landed()
 {
-    // ê²Œì„ ì˜¤ë²„: ë¸”ë¡ì´ ë³´ë“œì— ì±„ ì§„ì…í•˜ì§€ ëª»í•œ ì±„ë¡œ ë§‰í˜ (ì›ë³¸ move_blockì˜ y<=0 ë¡œì§ ì´ì‹)
+    // °ÔÀÓ ¿À¹ö: ºí·ÏÀÌ º¸µå¿¡ Ã¤ ÁøÀÔÇÏÁö ¸øÇÑ Ã¤·Î ¸·Èû (¿øº» move_blockÀÇ y<=0 ·ÎÁ÷ ÀÌ½Ä)
     if (current->get_y() < 0) {
         running = false;
         return;
     }
     renderer.draw_block(*current, current->get_x(), current->get_y());
-    Sleep(100);                           // ì°©ì§€í•œ ë¸”ë¡ 0.1ì´ˆ ì¶œë ¥
+    Sleep(100);                           // ÂøÁöÇÑ ºí·Ï 0.1ÃÊ Ãâ·Â
 
-    // íŠ¹ìˆ˜ ë¸”ë¡ ëŠ¥ë ¥ ë°œë™ (íŠ¹ìˆ˜ ë¸”ë¡ì´ ì•„ë‹ˆë©´ ì•„ë¬´ì¼ë„ ì•ˆí•¨)
+    // Æ¯¼ö ºí·Ï ´É·Â ¹ßµ¿ (Æ¯¼ö ºí·ÏÀÌ ¾Æ´Ï¸é ¾Æ¹«ÀÏµµ ¾ÈÇÔ)
     current->execute_effect(board);
 
     board.merge_block(*current);
 
-    // 1) ê°€ë“ ì°¬ ì¤„ íƒì§€ (ë³´ë“œëŠ” ì•„ì§ ë³€ê²½ X)
+    // 1) °¡µæ Âù ÁÙ Å½Áö (º¸µå´Â ¾ÆÁ÷ º¯°æ X)
     auto full_rows = board.find_full_lines();
-    // 2) ê° ì¤„ì— ê¹œë¹¡ì„ ì• ë‹ˆë©”ì´ì…˜ (ì›ë³¸ ë™ì‘ ì´ì‹)
+    // 2) °¢ ÁÙ¿¡ ±ôºıÀÓ ¾Ö´Ï¸ŞÀÌ¼Ç (¿øº» µ¿ÀÛ ÀÌ½Ä)
     for (int i = 0; i < full_rows.count; i++) {
         renderer.animate_line_clear(full_rows.rows[i]);
     }
-    // 3) ì‹¤ì œ ì¤„ ì œê±° + ìœ„ ì¤„ ëŒì–´ë‚´ë¦¼
+    // 3) ½ÇÁ¦ ÁÙ Á¦°Å + À§ ÁÙ ²ø¾î³»¸²
     board.remove_lines(full_rows);
 
     const int cleared = full_rows.count;
     stats.total_cleared    += cleared;
     stats.cleared_in_stage += cleared;
-    // ì›ë³¸ ê³µì‹: ì¤„ë‹¹ 100 + level*10 + rand()%10 (ëœë¤ ë³´ë„ˆìŠ¤ + ë ˆë²¨ ë³´ë„ˆìŠ¤)
+    // ¿øº» °ø½Ä: ÁÙ´ç 100 + level*10 + rand()%10 (·£´ı º¸³Ê½º + ·¹º§ º¸³Ê½º)
     for (int i = 0; i < cleared; i++) {
         stats.score += 100 + stage.level_index() * 10 + (rand() % 10);
     }
 
-    // === íŒ€ì› ì‘ì—…: Quest ëª¨ë“œ ===
-    // mode == GameMode::Quest ì¼ ë•Œ í€˜ìŠ¤íŠ¸ ìƒíƒœë¥¼ ê°±ì‹ í•˜ê³  ë‹¬ì„± ì‹œ ë³´ìƒ.
-    // - í€˜ìŠ¤íŠ¸ ìƒíƒœëŠ” Game ë©¤ë²„ë¡œ ìƒˆë¡œ ì¶”ê°€ (ì˜ˆ: struct QuestState { int target_lines, cleared; } quests;).
-    //   reset_state() ì—ì„œ í•¨ê»˜ ì´ˆê¸°í™”.
-    // - ê°±ì‹  ì˜ˆ (ì˜ì‚¬ ì½”ë“œ):
+    // === ÆÀ¿ø ÀÛ¾÷: Quest ¸ğµå ===
+    // mode == GameMode::Quest ÀÏ ¶§ Äù½ºÆ® »óÅÂ¸¦ °»½ÅÇÏ°í ´Ş¼º ½Ã º¸»ó.
+    // - Äù½ºÆ® »óÅÂ´Â Game ¸â¹ö·Î »õ·Î Ãß°¡ (¿¹: struct QuestState { int target_lines, cleared; } quests;).
+    //   reset_state() ¿¡¼­ ÇÔ²² ÃÊ±âÈ­.
+    // - °»½Å ¿¹ (ÀÇ»ç ÄÚµå):
     //     if (mode == GameMode::Quest) {
     //         quests.cleared += cleared;
     //         if (quests.cleared >= quests.target_lines) {
-    //             stats.score += 500;       // ë³´ë„ˆìŠ¤
+    //             stats.score += 500;       // º¸³Ê½º
     //             quests.cleared = 0;
-    //             quests.target_lines += 2; // ë‹¤ìŒ í€˜ìŠ¤íŠ¸
+    //             quests.target_lines += 2; // ´ÙÀ½ Äù½ºÆ®
     //         }
     //         dirty_stats = true;
     //     }
-    // - UI í‘œê¸°ê°€ í•„ìš”í•˜ë©´ IRenderer::draw_stats ì˜ ì‹œê·¸ë‹ˆì²˜ í™•ì¥ ë˜ëŠ” draw_quest ë©”ì„œë“œ ì‹ ì„¤.
+    // - UI Ç¥±â°¡ ÇÊ¿äÇÏ¸é IRenderer::draw_stats ÀÇ ½Ã±×´ÏÃ³ È®Àå ¶Ç´Â draw_quest ¸Ş¼­µå ½Å¼³.
 
-    // ë³´ë“œ/í†µê³„ ë³€ê²½ â†’ ë‹¤ìŒ í”„ë ˆì„ì— ë‹¤ì‹œ ê·¸ë¦¼
+    // º¸µå/Åë°è º¯°æ ¡æ ´ÙÀ½ ÇÁ·¹ÀÓ¿¡ ´Ù½Ã ±×¸²
     dirty_board = true;
     dirty_stats = true;
 
-    // ë ˆë²¨ì—… íŒì •: í˜„ì¬ ìŠ¤í…Œì´ì§€ì˜ ëª©í‘œ ë¼ì¸ì„ ì±„ì› ìœ¼ë©´ ë‹¤ìŒ ìŠ¤í…Œì´ì§€ë¡œ ì§„í–‰
+    // ·¹º§¾÷ ÆÇÁ¤: ÇöÀç ½ºÅ×ÀÌÁöÀÇ ¸ñÇ¥ ¶óÀÎÀ» Ã¤¿üÀ¸¸é ´ÙÀ½ ½ºÅ×ÀÌÁö·Î ÁøÇà
     if (stage.should_advance(stats.cleared_in_stage)) {
         if (stage.advance()) {
             stats.cleared_in_stage = 0;
-            renderer.clear();                   // ë²½ ìƒ‰ì´ ë°”ë€Œë¯€ë¡œ í™”ë©´ ì „ì²´ ì¬ì¶œë ¥
+            renderer.clear();                   // º® »öÀÌ ¹Ù²î¹Ç·Î È­¸é ÀüÃ¼ ÀçÃâ·Â
             dirty_board = dirty_block = dirty_next = dirty_stats = dirty_hold = true;
-            last_drawn_block.reset();           // ì´ì „ ì”ìƒ ì¶”ì  ë¬´íš¨í™”
-            last_drawn_ghost.reset();           // ì´ì „ ghost ë¸”ë¡ ì¶”ì  ë¬´íš¨í™”
-            ghost_cache.reset();                // í™”ë©´ ì´ˆê¸°í™”ëìœ¼ë‹ˆ ghost ìºì‹œë„ ë¬´íš¨í™”
+            last_drawn_block.reset();           // ÀÌÀü ÀÜ»ó ÃßÀû ¹«È¿È­
+            last_drawn_ghost.reset();           // ÀÌÀü ghost ºí·Ï ÃßÀû ¹«È¿È­
+            ghost_cache.reset();                // È­¸é ÃÊ±âÈ­µÆÀ¸´Ï ghost Ä³½Ãµµ ¹«È¿È­
         }
     }
 
@@ -308,10 +308,10 @@ void Game::spawn_next_block()
 
     dirty_block = true;
     dirty_next  = true;
-    can_hold = true;            // ìƒˆ ë¸”ë¡ì´ ë“±ì¥í–ˆìœ¼ë¯€ë¡œ í™€ë“œ ì‚¬ìš© ê°€ëŠ¥
-    last_drawn_block.reset();   // ì§ì „ì— ê·¸ë¦° ë¸”ë¡ì€ ì´ë¯¸ ë³´ë“œì— merge ë¨ â†’ ì¶”ì  ë¬´íš¨í™”
-    last_drawn_ghost.reset();   // ì§ì „ì— ê·¸ë¦° ghost ë¸”ë¡ë„ ì‚¬ë¼ì§ˆ ì˜ˆì • â†’ ì¶”ì  ë¬´íš¨í™”
-    ghost_cache.reset();        // ìƒˆ ë¸”ë¡ì´ë¼ ghost ìºì‹œ ë¬´íš¨í™”
+    can_hold = true;            // »õ ºí·ÏÀÌ µîÀåÇßÀ¸¹Ç·Î È¦µå »ç¿ë °¡´É
+    last_drawn_block.reset();   // Á÷Àü¿¡ ±×¸° ºí·ÏÀº ÀÌ¹Ì º¸µå¿¡ merge µÊ ¡æ ÃßÀû ¹«È¿È­
+    last_drawn_ghost.reset();   // Á÷Àü¿¡ ±×¸° ghost ºí·Ïµµ »ç¶óÁú ¿¹Á¤ ¡æ ÃßÀû ¹«È¿È­
+    ghost_cache.reset();        // »õ ºí·ÏÀÌ¶ó ghost Ä³½Ã ¹«È¿È­
 }
 
 bool Game::any_dirty() const
@@ -321,32 +321,32 @@ bool Game::any_dirty() const
 
 void Game::render_frame()
 {
-    // ìŠ¤ëƒ…ìƒ·ì—ì„œ ì„ì‹œ Block ì„ stack ì— êµ¬ì„±í•´ erase í˜¸ì¶œì— ë„˜ê¹€ (heap í• ë‹¹ X).
+    // ½º³À¼¦¿¡¼­ ÀÓ½Ã Block À» stack ¿¡ ±¸¼ºÇØ erase È£Ãâ¿¡ ³Ñ±è (heap ÇÒ´ç X).
     auto erase_from_snapshot = [&](const BlockSnapshot& s) {
         Block tmp(s.shape, s.angle, s.x, s.y);
         renderer.erase_block(tmp, s.x, s.y);
     };
 
-    // 1) ë¸”ë¡ì´ ì›€ì§ì˜€ìœ¼ë©´ ì´ì „ ghost ë¸”ë¡ ë¨¼ì € ì§€ì›€
+    // 1) ºí·ÏÀÌ ¿òÁ÷¿´À¸¸é ÀÌÀü ghost ºí·Ï ¸ÕÀú Áö¿ò
     if (dirty_block && last_drawn_ghost) {
         erase_from_snapshot(*last_drawn_ghost);
         last_drawn_ghost.reset();
     }
 
-    // 2) ë¸”ë¡ì´ ì›€ì§ì˜€ìœ¼ë©´ ì´ì „ ìœ„ì¹˜ ì§€ì›€ (ë³´ë“œê°€ í•¨ê»˜ dirtyë©´ ì–´ì°¨í”¼ ë®ì–´ì“°ë‹ˆ ë¬´í•´)
+    // 2) ºí·ÏÀÌ ¿òÁ÷¿´À¸¸é ÀÌÀü À§Ä¡ Áö¿ò (º¸µå°¡ ÇÔ²² dirty¸é ¾îÂ÷ÇÇ µ¤¾î¾²´Ï ¹«ÇØ)
     if (dirty_block && last_drawn_block) {
         erase_from_snapshot(*last_drawn_block);
         last_drawn_block.reset();
     }
 
-    // 3) ë³´ë“œ ê°±ì‹ 
+    // 3) º¸µå °»½Å
     if (dirty_board) {
         renderer.draw_board(board, stage.display_level(), mode);
         dirty_board = false;
-        dirty_block = true;             // ë³´ë“œ ìœ„ì— ë¸”ë¡ ë‹¤ì‹œ ê·¸ë¦¬ê¸°
+        dirty_block = true;             // º¸µå À§¿¡ ºí·Ï ´Ù½Ã ±×¸®±â
     }
 
-    // 4) ë¸”ë¡ / Ghost ê°±ì‹ 
+    // 4) ºí·Ï / Ghost °»½Å
     if (dirty_block && current) {
         const int cx = current->get_x();
         const int ca = current->get_angle();
@@ -354,7 +354,7 @@ void Game::render_frame()
         const int board_ver = board.version();
 
         if (mode != GameMode::HiddenStack) {
-            // Ghost ìœ„ì¹˜ ê²°ì • â€” (x, angle, board_version) ì´ ëª¨ë‘ ê°™ìœ¼ë©´ ìºì‹œ hit, ì¬ê³„ì‚° ìŠ¤í‚µ.
+            // Ghost À§Ä¡ °áÁ¤ ? (x, angle, board_version) ÀÌ ¸ğµÎ °°À¸¸é Ä³½Ã hit, Àç°è»ê ½ºÅµ.
             int ghost_y;
             if (ghost_cache
                 && ghost_cache->basis_x == cx
@@ -367,12 +367,12 @@ void Game::render_frame()
                 while (!board.check_collision(ghost)) {
                     ghost.move_down();
                 }
-                ghost.move_up();        // ì¶©ëŒí•œ ë°”ë¡œ ìœ„ê°€ ì°©ì§€ ìœ„ì¹˜
+                ghost.move_up();        // Ãæµ¹ÇÑ ¹Ù·Î À§°¡ ÂøÁö À§Ä¡
                 ghost_y = ghost.get_y();
                 ghost_cache = GhostCache{cx, ca, board_ver, ghost_y};
             }
 
-            // Ghost ê·¸ë¦¬ê¸° â€” ìŠ¤íƒ Block ìœ¼ë¡œ êµ¬ì„± (heap X)
+            // Ghost ±×¸®±â ? ½ºÅÃ Block À¸·Î ±¸¼º (heap X)
             Block ghost_to_draw(cshape, ca, cx, ghost_y);
             renderer.draw_ghost_block(ghost_to_draw, cx, ghost_y);
             last_drawn_ghost = BlockSnapshot{cshape, ca, cx, ghost_y};
@@ -387,7 +387,7 @@ void Game::render_frame()
         dirty_block = false;
     }
 
-    // 5) ë‹¤ìŒ ë¸”ë¡ ë¯¸ë¦¬ë³´ê¸°
+    // 5) ´ÙÀ½ ºí·Ï ¹Ì¸®º¸±â
     if (dirty_next) {
         if (next) {
             renderer.draw_next_block(*next, stage.display_level());
@@ -395,17 +395,18 @@ void Game::render_frame()
         dirty_next = false;
     }
 
-    // 6) í™€ë“œ ë¸”ë¡
+    // 6) È¦µå ºí·Ï
     if (dirty_hold) {
         renderer.draw_hold_block(hold.get(), stage.display_level());
         dirty_hold = false;
     }
 
-    // 7) í†µê³„ ë°•ìŠ¤
+    // 7) Åë°è ¹Ú½º
     if (dirty_stats) {
         int lines_left = stage.current().clear_line - stats.cleared_in_stage;
         if (lines_left < 0) lines_left = 0;
         renderer.draw_stats(stage.display_level(), stats.score, lines_left);
+        renderer.draw_mode_description(mode);
         dirty_stats = false;
     }
 }
@@ -413,7 +414,7 @@ void Game::render_frame()
 void Game::hold_block()
 {
     if (!current || !can_hold) return;
-    // ì²˜ìŒ í™€ë“œí•˜ëŠ” ê²½ìš°: current â†’ hold, next â†’ current, ìƒˆ next ìƒì„±
+    // Ã³À½ È¦µåÇÏ´Â °æ¿ì: current ¡æ hold, next ¡æ current, »õ next »ı¼º
     if (!hold) {
         hold = std::move(current);
         current = std::move(next);
@@ -421,16 +422,16 @@ void Game::hold_block()
         dirty_next = true;
     }
     else {
-        // ì´ë¯¸ í™€ë“œí•œ ë¸”ë¡ì´ ìˆëŠ” ê²½ìš°: current â†” hold ìŠ¤ì™‘
+        // ÀÌ¹Ì È¦µåÇÑ ºí·ÏÀÌ ÀÖ´Â °æ¿ì: current ¡ê hold ½º¿Ò
         std::swap(current, hold);
     }
 
-    current->reset_position();    // í™€ë“œ í›„ í˜„ì¬ ë¸”ë¡ì€ ìƒˆë¡œ ë“±ì¥í•˜ëŠ” ê²ƒì²˜ëŸ¼ ìœ„ì¹˜/íšŒì „ ì´ˆê¸°í™”
-    hold->reset_position();       // í™€ë“œì— ë“¤ì–´ê°„ ë¸”ë¡ë„ ë¯¸ë¦¬ë³´ê¸°ìš©ìœ¼ë¡œ ì´ˆê¸°í™”
+    current->reset_position();    // È¦µå ÈÄ ÇöÀç ºí·ÏÀº »õ·Î µîÀåÇÏ´Â °ÍÃ³·³ À§Ä¡/È¸Àü ÃÊ±âÈ­
+    hold->reset_position();       // È¦µå¿¡ µé¾î°£ ºí·Ïµµ ¹Ì¸®º¸±â¿ëÀ¸·Î ÃÊ±âÈ­
 
-    can_hold = false;             // ì°©ì§€ ì „ê¹Œì§€ í™€ë“œ ì‚¬ìš© ë¶ˆê°€
+    can_hold = false;             // ÂøÁö Àü±îÁö È¦µå »ç¿ë ºÒ°¡
     dirty_block = true;
     dirty_hold = true;
-    ghost_cache.reset();          // current ê°€ ë°”ë€Œì—ˆìœ¼ë¯€ë¡œ ghost ìºì‹œ ë¬´íš¨í™”
+    ghost_cache.reset();          // current °¡ ¹Ù²î¾úÀ¸¹Ç·Î ghost Ä³½Ã ¹«È¿È­
 }
 
