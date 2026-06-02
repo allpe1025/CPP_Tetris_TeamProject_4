@@ -3,6 +3,7 @@
 #include <conio.h>
 #include <cstdlib>
 #include <iostream>
+#include "Color.h"
 
 namespace {
     // 한 프레임 길이(ms). StageConfig::speed 는 이 단위의 배수가 된다.
@@ -17,6 +18,8 @@ Game::Game(IRenderer& r, InputManager& i)
 
 void Game::run()
 {
+    return_to_mode_select = false;
+
     // main 에서 set_mode 로 모드를 미리 정해준 경우, main 이 이미 로고를 보여줬다고 가정하고 생략.
     // (main 이 로고 -> 모드 선택 -> 서브클래스 인스턴스화 순서로 흐름을 주도하기 때문)
     if (!mode_preset) {
@@ -26,6 +29,7 @@ void Game::run()
         mode = static_cast<GameMode>(ask_game_mode());
     }
     int start_level = ask_start_level();            // 1~8 선택
+    if (return_to_mode_select) return;
 
     // 원본은 게임오버 후 init() 호출하며 무한 반복. 동일 흐름.
     while (true) {
@@ -34,6 +38,7 @@ void Game::run()
         running = true;
         while (running) {
             handle_input();
+            if (return_to_mode_select) return;
             tick();
             if (any_dirty()) render_frame();    // 더티 플래그가 켜진 영역만 갱신
             Sleep(FRAME_MS);
@@ -42,6 +47,7 @@ void Game::run()
         renderer.draw_game_over();
         Sleep(1000);
         wait_any_key();
+        if (return_to_mode_select) return;
         // 같은 시작 레벨로 다시 시작 (원본도 init 후 input_data 다시 호출하지만
         // 사용자 입력 흐름을 매번 끊지 않게 여기선 한 번 받은 레벨을 재사용).
     }
@@ -52,12 +58,14 @@ int Game::ask_game_mode()
     // 콘솔 텍스트 입력으로 모드 선택 (ask_start_level 과 동일한 스타일).
     // 1~5 이외 입력은 다시 받음. 화면을 한 번 비운 뒤 로고 위에 메뉴를 출력한다.
     renderer.clear();
+    ColorUtility::apply(Color::GRAY);
     std::cout << "==== Select Game Mode ====\n";
     std::cout << "  1. Basic         (기본)\n";
     std::cout << "  2. Inverted      (좌우/회전 키 반전)\n";
     std::cout << "  3. Hidden Stack  (쌓인 블록 숨김)\n";
     std::cout << "  4. Special Block (특수 블록 등장)\n";
     std::cout << "  5. Quest         (퀘스트)\n";
+    std::cout << "\nESC: 모드 선택창으로 돌아가기\n";
 
     int m = 0;
     while (m < 1 || m > 5) {
@@ -69,22 +77,32 @@ int Game::ask_game_mode()
             m = 0;
         }
     }
+    ColorUtility::apply(Color::WHITE);
     return m;
 }
 
 int Game::ask_start_level()
 {
-    int lv = 0;
-    while (lv < 1 || lv > 8) {
-        std::cout << "\nSelect Start level[1-8]: ";
-        std::cin >> lv;
-        if (std::cin.fail()) {
-            std::cin.clear();
-            std::cin.ignore(1024, '\n');
-            lv = 0;
+    renderer.clear();
+    ColorUtility::apply(Color::GRAY);
+    std::cout << "==== Select Start Level ====\n";
+    std::cout << "Select Start level[1-8]\n";
+    std::cout << "ESC: 모드 선택창으로 돌아가기\n\n";
+
+    while (true) {
+        int key = _getch();
+        if (key == 27) {
+            return_to_mode_select = true;
+            ColorUtility::apply(Color::WHITE);
+            return 0;
+        }
+        if (key >= '1' && key <= '8') {
+            int lv = key - '0';
+            std::cout << "Selected Level: " << lv << "\n";
+            ColorUtility::apply(Color::WHITE);
+            return lv;
         }
     }
-    return lv;
 }
 
 void Game::reset_state(int start_level)
@@ -105,7 +123,9 @@ void Game::reset_state(int start_level)
 void Game::wait_any_key()
 {
     while (!_kbhit()) Sleep(30);
-    _getch();                               // 입력 버퍼에서 꺼냄
+    if (_getch() == 27) {
+        return_to_mode_select = true;
+    }
 }
 
 void Game::wait_for_logo_key()
@@ -131,6 +151,10 @@ void Game::handle_input(char c)
     bool inv = (mode == GameMode::Inverted);    // Inverted 모드에서 좌우/회전 키 반전
 
     switch (c) {
+    case 'x':
+        return_to_mode_select = true;
+        running = false;
+        break;
     case 'l': try_move(inv ?  1 : -1, 0); break;       // 좌
     case 'r': try_move(inv ? -1 :  1, 0); break;       // 우
     case 'd':                               // 소프트 드롭: 못 내려가면 즉시 착지
