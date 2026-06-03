@@ -10,7 +10,7 @@ enum class GameMode;
 class ConsoleRenderer : public IRenderer
 {
 private:
-    int ab_x = 26;                         // 보드의 콘솔 기준 x 좌표
+    int ab_x = 45;                         // 보드의 콘솔 기준 x 좌표
     int ab_y = 1;                          // 보드의 콘솔 기준 y 좌표
 
     // === 렌더링 캐시 ===
